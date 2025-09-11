@@ -1104,6 +1104,7 @@ GameObject:
   - component: {fileID: 409866527}
   - component: {fileID: 409866526}
   - component: {fileID: 409866528}
+  - component: {fileID: 409866529}
   m_Layer: 0
   m_Name: ScriptHolder
   m_TagString: Untagged
@@ -1145,6 +1146,15 @@ MonoBehaviour:
   - {fileID: 8300000, guid: deafc79335b2dfd4abb4f5bb0052092e, type: 3}
   - {fileID: 8300000, guid: af305402fa05b024588569a460f311ea, type: 3}
   - {fileID: 8300000, guid: ede3368aab4778d42b8a84ed0159e3f0, type: 3}
+  - {fileID: 8300000, guid: f244a039d2e44614fb8e9c90aae48b0d, type: 3}
+  - {fileID: 8300000, guid: 42ae0b3af8322784c860c8edef672ce7, type: 3}
+  - {fileID: 8300000, guid: 67a4d0c27507dc345a57bfd6acffa3e8, type: 3}
+  - {fileID: 8300000, guid: ecc3caf9a59137b40a06bb586aec24c1, type: 3}
+  - {fileID: 8300000, guid: 44a0bee67b35af0488e866241a146ef1, type: 3}
+  - {fileID: 8300000, guid: f873adaae064c334ca26288307d7db6b, type: 3}
+  - {fileID: 8300000, guid: 884201f218ff86547b5a63bdebb88638, type: 3}
+  - {fileID: 8300000, guid: f873adaae064c334ca26288307d7db6b, type: 3}
+  - {fileID: 8300000, guid: 087b5c52dcf0a124690b5828d231e7bc, type: 3}
   rightPlace: 0
   lastDragged: {fileID: 0}
 --- !u!4 &409866527
@@ -1177,6 +1187,19 @@ MonoBehaviour:
   screenPoint: {x: 0, y: 0, z: 0}
   offset: {x: 0, y: 0, z: 0}
   padding: 0.02
+--- !u!114 &409866529
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 409866525}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f691727cb8600b548a28a38627a5f75a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  objScript: {fileID: 409866526}
 --- !u!1 &519420028
 GameObject:
   m_ObjectHideFlags: 0

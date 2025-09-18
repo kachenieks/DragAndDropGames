@@ -50,16 +50,36 @@ public class ObstaclesControlerScript : MonoBehaviour
         }
         // Iznīcinās ja lidos pa labi
 
-        if (speed < 0 && transform.position.x > (screenBoundriesScript.minX - 80) && !isFadingOut)
+        if (speed < 0 && transform.position.x > (screenBoundriesScript.maxX - 80) && !isFadingOut)
         {
             isFadingOut = true;
             StartCoroutine(FadeOutAndDestroy());
         }
 
-        if(objectScript.drag && !isFadingOut && RectTransformUtility.RectangleContainsScreenPoint(rectTransform, Input.mousePosition, Camera.main))
+        if(ObjectScript.drag && !isFadingOut && 
+            RectTransformUtility.RectangleContainsScreenPoint(
+                rectTransform, Input.mousePosition, Camera.main))
         {
             Debug.Log("Obstacle hit by drag");
-            //.........
+            if(ObjectScript.lastDragged != null)
+            {
+                StartCoroutine(ShrinkAndDestroy(ObjectScript.lastDragged, 0.5f));
+                ObjectScript.lastDragged = null;
+                ObjectScript.drag = false;
+            }
+
+            StartCoroutine(FadeOutAndDestroy());
+            isFadingOut = true;
+
+            image.color = Color.cyan;
+            StartCoroutine(RecoverColor());
+
+            StartCoroutine(Vibrate());
+
+            if(objectScript.effects != null && objectScript.audioCli != null)
+            {
+                objectScript.effects.PlayOneShot(objectScript.audioCli[14]);
+            }
         }
     }
 

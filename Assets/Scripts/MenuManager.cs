@@ -14,6 +14,11 @@ public class MenuManager : MonoBehaviour
         SceneManager.LoadScene(2);
     }
 
+    public void BackToMainMenu()
+    {
+        SceneManager.LoadScene(0);
+    }
+
     // Update is called once per frame
     public void QuitGame()
     {

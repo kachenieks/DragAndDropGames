@@ -1,63 +1,73 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-public class DragAndDropScript : MonoBehaviour, IPointerDownHandler, IBeginDragHandler, 
-    IDragHandler, IEndDragHandler
+public class DragAndDropScript : MonoBehaviour, IPointerDownHandler, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
-    private CanvasGroup canvasGro;
-    private RectTransform rectTra;
-    public ObjectScript objectScr;
-    public ScreenBoundriesScript screenBou;
+    private CanvasGroup canvasGroup;
+    private RectTransform rectTransform;
+    private ObjectScript objectScript;
+    private ScreenBoundriesScript screenBoundries;
 
     void Start()
     {
-        canvasGro = GetComponent<CanvasGroup>();
-        rectTra = GetComponent<RectTransform>();
+        // Pievieno CanvasGroup, ja nav
+        canvasGroup = GetComponent<CanvasGroup>();
+        if (canvasGroup == null)
+            canvasGroup = gameObject.AddComponent<CanvasGroup>();
+
+        rectTransform = GetComponent<RectTransform>();
+
+        // Automātiski atrod nepieciešamos skriptus ainā
+        objectScript = FindObjectOfType<ObjectScript>();
+        screenBoundries = FindObjectOfType<ScreenBoundriesScript>();
+
+        if (objectScript == null)
+            Debug.LogError("ObjectScript nav atrasts ainā! Pievienojiet ObjectManager ar ObjectScript.");
+        if (screenBoundries == null)
+            Debug.LogError("ScreenBoundriesScript nav atrasts ainā! Pievienojiet ScreenBoundries GameObject.");
     }
 
     public void OnPointerDown(PointerEventData eventData)
     {
-        if (Input.GetMouseButton(0) && !Input.GetMouseButton(1) && !Input.GetMouseButton(2)) 
+        if (Input.GetMouseButton(0))
         {
-            Debug.Log("OnPointerDown");
-            objectScr.effects.PlayOneShot(objectScr.audioCli[0]);
+            Debug.Log("Vilku: " + name);
+            if (objectScript != null && objectScript.effects != null && objectScript.audioCli.Length > 0)
+                objectScript.effects.PlayOneShot(objectScript.audioCli[0]);
         }
     }
 
     public void OnBeginDrag(PointerEventData eventData)
+{
+    if (Input.GetMouseButton(0))
     {
-        if(Input.GetMouseButton(0) && !Input.GetMouseButton(1) && !Input.GetMouseButton(2))
+        ObjectScript.drag = true;
+        canvasGroup.blocksRaycasts = false;
+        canvasGroup.alpha = 0.6f;
+        transform.SetAsLastSibling();
+
+        // 👇 Iestatiet lastDragged uz PAŠREIZĒJO OBJEKTU
+        ObjectScript.lastDragged = gameObject; // 👈 NE eventData.pointerDrag!
+
+        if (screenBoundries != null)
         {
-            ObjectScript.drag = true;
-            canvasGro.blocksRaycasts = false;
-            canvasGro.alpha = 0.6f;
-            //rectTra.SetAsLastSibling();
-            int positionIndex = transform.parent.childCount - 1;
-            int position = Mathf.Max(0, positionIndex - 1);
-            transform.SetSiblingIndex(position);
-
             Vector3 cursorWorldPos = Camera.main.ScreenToWorldPoint(
-                new Vector3 (Input.mousePosition.x, Input.mousePosition.y, screenBou.screenPoint.z));
-            rectTra.position = cursorWorldPos;
+                new Vector3(Input.mousePosition.x, Input.mousePosition.y, screenBoundries.screenPoint.z));
+            rectTransform.position = cursorWorldPos;
 
-            screenBou.screenPoint = Camera.main.WorldToScreenPoint(rectTra.localPosition);
-
-            screenBou.offset = rectTra.localPosition - Camera.main.ScreenToWorldPoint(
-                new Vector3(Input.mousePosition.x, Input.mousePosition.y, screenBou.screenPoint.z));
-
-            ObjectScript.lastDragged = eventData.pointerDrag;
+            screenBoundries.screenPoint = Camera.main.WorldToScreenPoint(rectTransform.position);
+            screenBoundries.offset = rectTransform.position - Camera.main.ScreenToWorldPoint(
+                new Vector3(Input.mousePosition.x, Input.mousePosition.y, screenBoundries.screenPoint.z));
         }
     }
-
+}
     public void OnDrag(PointerEventData eventData)
     {
-        if (Input.GetMouseButton(0) && !Input.GetMouseButton(1) && !Input.GetMouseButton(2))
+        if (Input.GetMouseButton(0) && screenBoundries != null)
         {
-            Vector3 curScreenPoint = new Vector3(Input.mousePosition.x, Input.mousePosition.y, screenBou.screenPoint.z);
-            Vector3 curPosition = Camera.main.ScreenToWorldPoint(curScreenPoint) + screenBou.offset;
-            rectTra.position = screenBou.GetClampedPosition(curPosition);
+            Vector3 curScreenPoint = new Vector3(Input.mousePosition.x, Input.mousePosition.y, screenBoundries.screenPoint.z);
+            Vector3 curPosition = Camera.main.ScreenToWorldPoint(curScreenPoint) + screenBoundries.offset;
+            rectTransform.position = screenBoundries.GetClampedPosition(curPosition);
         }
     }
 
@@ -66,17 +76,18 @@ public class DragAndDropScript : MonoBehaviour, IPointerDownHandler, IBeginDragH
         if (Input.GetMouseButtonUp(0))
         {
             ObjectScript.drag = false;
-            canvasGro.blocksRaycasts = true;
-            canvasGro.alpha = 1.0f;
+            canvasGroup.blocksRaycasts = true;
+            canvasGroup.alpha = 1.0f;
 
-            if(objectScr.rightPlace)
+            if (objectScript != null)
             {
-                canvasGro.blocksRaycasts = false;
-                ObjectScript.lastDragged = null;
-
+                if (objectScript.rightPlace)
+                {
+                    canvasGroup.blocksRaycasts = false;
+                    ObjectScript.lastDragged = null;
+                }
+                objectScript.rightPlace = false;
             }
-
-            objectScr.rightPlace = false;
         }
     }
 }

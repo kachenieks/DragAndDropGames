@@ -57,30 +57,31 @@ public class ObstaclesControlerScript : MonoBehaviour
         }
 
         if(ObjectScript.drag && !isFadingOut && 
-            RectTransformUtility.RectangleContainsScreenPoint(
-                rectTransform, Input.mousePosition, Camera.main))
-        {
-            Debug.Log("Obstacle hit by drag");
-            if(ObjectScript.lastDragged != null)
-            {
-                StartCoroutine(ShrinkAndDestroy(ObjectScript.lastDragged, 0.5f));
-                ObjectScript.lastDragged = null;
-                ObjectScript.drag = false;
-            }
+    RectTransformUtility.RectangleContainsScreenPoint(
+        rectTransform, Input.mousePosition, Camera.main))
+{
+    Debug.Log("Obstacle hit by drag");
+    if(ObjectScript.lastDragged != null)
+    {
+        StartCoroutine(ShrinkAndDestroy(ObjectScript.lastDragged, 0.5f));
+        ObjectScript.lastDragged = null;
+        ObjectScript.drag = false;
+    }
 
-            StartCoroutine(FadeOutAndDestroy());
-            isFadingOut = true;
+    // ❌ NOŅEMTS: lidojošais objekts netiek iznīcināts
+    // StartCoroutine(FadeOutAndDestroy());
+    // isFadingOut = true;
 
-            image.color = Color.cyan;
-            StartCoroutine(RecoverColor());
+    // ✅ Efekti paliek
+    image.color = Color.cyan;
+    StartCoroutine(RecoverColor());
+    StartCoroutine(Vibrate());
 
-            StartCoroutine(Vibrate());
-
-            if(objectScript.effects != null && objectScript.audioCli != null)
-            {
-                objectScript.effects.PlayOneShot(objectScript.audioCli[14]);
-            }
-        }
+    if(objectScript.effects != null && objectScript.audioCli != null)
+    {
+        objectScript.effects.PlayOneShot(objectScript.audioCli[14]);
+    }
+}
     }
 
     IEnumerator FadeIn()
@@ -144,12 +145,39 @@ public class ObstaclesControlerScript : MonoBehaviour
         float elapsed = 0f;
         float intensity = 5f;
 
-        while(elapsed < duration)
+        while (elapsed < duration)
         {
             rectTransform.anchoredPosition = originalPosition + Random.insideUnitCircle * intensity;
             elapsed += Time.deltaTime;
             yield return null;
         }
 
+if (ObjectScript.drag && !isFadingOut && 
+    RectTransformUtility.RectangleContainsScreenPoint(rectTransform, Input.mousePosition, Camera.main))
+{
+    Debug.Log("✅ Sadursme atpazīta!");
+
+            if (ObjectScript.lastDragged != null)
+            {
+                Debug.Log("🚀 Iznīcina mašīnu: " + ObjectScript.lastDragged.name);
+                Destroy(ObjectScript.lastDragged); // 👈 Strādā arī ar UI
+                ObjectScript.lastDragged = null;
+                ObjectScript.drag = false;
+            }
+else
+{
+    Debug.Log("❌ lastDragged ir NULL!");
+}
+
+    // Efekti
+    image.color = Color.cyan;
+    StartCoroutine(RecoverColor());
+    StartCoroutine(Vibrate());
+
+    if (objectScript != null && objectScript.effects != null && objectScript.audioCli != null)
+    {
+        objectScript.effects.PlayOneShot(objectScript.audioCli[14]);
+    }
+}
     }
 }

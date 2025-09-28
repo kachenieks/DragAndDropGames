@@ -6,147 +6,86 @@ public class DropPlaceScript : MonoBehaviour, IDropHandler
     private float placeZRot, vehicleZRot, rotDiff;
     private Vector3 placeSiz, vehicleSiz;
     private float xSizeDiff, ySizeDiff;
-    public ObjectScript objScript;
+    private ObjectScript objectScript; // 👈 tagad privāts, netiek iestatīts Inspectorā
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    public void OnDrop(PointerEventData eventData) 
+    void Start()
     {
-        if((eventData.pointerDrag != null) && Input.GetMouseButtonUp(0) && !Input.GetMouseButton(1) && !Input.GetMouseButton(2))
+        // Automātiski atrod ObjectScript ainā
+        objectScript = FindObjectOfType<ObjectScript>();
+        if (objectScript == null)
+            Debug.LogError("ObjectScript nav atrasts! Pievienojiet ObjectManager ar ObjectScript.");
+    }
+
+    public void OnDrop(PointerEventData eventData) 
+{
+    if ((eventData.pointerDrag != null) && Input.GetMouseButtonUp(0))
+    {
+        if (eventData.pointerDrag.tag.Equals(tag)) 
         {
-            if(eventData.pointerDrag.tag.Equals(tag)) 
+            // 👇 Rotācijas un mērogošanas pārbaude
+            float placeZRot = eventData.pointerDrag.GetComponent<RectTransform>().transform.eulerAngles.z;
+            float vehicleZRot = GetComponent<RectTransform>().transform.eulerAngles.z;
+            float rotDiff = Mathf.Abs(placeZRot - vehicleZRot);
+            Debug.Log("Rotation difference: " + rotDiff);
+
+            Vector3 placeSiz = eventData.pointerDrag.GetComponent<RectTransform>().localScale;
+            Vector3 vehicleSiz = GetComponent<RectTransform>().localScale;
+            float xSizeDiff = Mathf.Abs(placeSiz.x - vehicleSiz.x);
+            float ySizeDiff = Mathf.Abs(placeSiz.y - vehicleSiz.y);
+            Debug.Log("X size difference: " + xSizeDiff);
+            Debug.Log("Y size difference: " + ySizeDiff);
+
+            if ((rotDiff <= 5 || (rotDiff >= 355 && rotDiff <= 360)) &&
+                (xSizeDiff <= 0.05f && ySizeDiff <= 0.05f))
             {
-                placeZRot = 
-                    eventData.pointerDrag.GetComponent<RectTransform>().transform.eulerAngles.z;
+                Debug.Log("Correct place");
+                objectScript.rightPlace = true;
 
-                vehicleZRot = 
-                    GetComponent<RectTransform>().transform.eulerAngles.z;
+                // Paziņo GameManager
+                GameManager gm = FindObjectOfType<GameManager>();
+                gm?.OnVehicleCorrectlyPlaced();
 
-                rotDiff = Mathf.Abs(placeZRot - vehicleZRot);
-                Debug.Log("Rotation difference: " + rotDiff);
+                // Novieto objektu precīzi
+                eventData.pointerDrag.GetComponent<RectTransform>().anchoredPosition = GetComponent<RectTransform>().anchoredPosition;
+                eventData.pointerDrag.GetComponent<RectTransform>().localRotation = GetComponent<RectTransform>().localRotation;
+                eventData.pointerDrag.GetComponent<RectTransform>().localScale = GetComponent<RectTransform>().localScale;
 
-                placeSiz = eventData.pointerDrag.GetComponent<RectTransform>().localScale;
-                vehicleSiz = GetComponent<RectTransform>().localScale;
-                xSizeDiff = Mathf.Abs(placeSiz.x - vehicleSiz.x);
-                ySizeDiff = Mathf.Abs(placeSiz.y - vehicleSiz.y);
-                Debug.Log("X size difference: " +  xSizeDiff);
-                Debug.Log("Y size difference: " + ySizeDiff);
-
-                if((rotDiff <= 5) || (rotDiff >= 355 && rotDiff <= 360) &&
-                    (xSizeDiff <= 0.05 && ySizeDiff <= 0.05))
-                {
-                    Debug.Log("Correct place");
-                    objScript.rightPlace = true;
-                    eventData.pointerDrag.GetComponent<RectTransform>().anchoredPosition = GetComponent<RectTransform>().anchoredPosition;
-
-                    eventData.pointerDrag.GetComponent<RectTransform>().localRotation = GetComponent<RectTransform>().localRotation;
-
-                    eventData.pointerDrag.GetComponent<RectTransform>().localScale = GetComponent<RectTransform>().localScale;
-
-                    switch (eventData.pointerDrag.tag)
-                    {
-                        case "Garbage":
-                            objScript.effects.PlayOneShot(objScript.audioCli[2]);
-                            break;
-                        case "Medicine":
-                            objScript.effects.PlayOneShot(objScript.audioCli[3]);
-                            break;
-                        case "Fire":
-                            objScript.effects.PlayOneShot(objScript.audioCli[4]);
-                            break;
-                        case "Bus":
-                            objScript.effects.PlayOneShot(objScript.audioCli[5]);
-                            break;
-                        case "B2":
-                            objScript.effects.PlayOneShot(objScript.audioCli[6]);
-                            break;
-                        case "Cement":
-                            objScript.effects.PlayOneShot(objScript.audioCli[7]);
-                            break;
-                        case "E46":
-                            objScript.effects.PlayOneShot(objScript.audioCli[8]);
-                            break;
-                        case "E61":
-                            objScript.effects.PlayOneShot(objScript.audioCli[9]);
-                            break;
-                        case "Eskavators":
-                            objScript.effects.PlayOneShot(objScript.audioCli[10]);
-                            break;
-                        case "Police":
-                            objScript.effects.PlayOneShot(objScript.audioCli[11]);
-                            break;
-                        case "Traktors":
-                            objScript.effects.PlayOneShot(objScript.audioCli[12]);
-                            break;
-                        case "Traktors2":
-                            objScript.effects.PlayOneShot(objScript.audioCli[13]);
-                            break;
-                        default:
-                            Debug.Log("Unknown tag detected!");
-                            break;
-                    }
-                }
-
+                // Skaņas
+                PlaySound(eventData.pointerDrag.tag);
             }
             else
             {
-                objScript.rightPlace = false;
-                objScript.effects.PlayOneShot(objScript.audioCli[1]);
-
-                switch(eventData.pointerDrag.tag)
-                {
-                    case "Garbage":
-                        objScript.vehicles[0].GetComponent<RectTransform>().localPosition = objScript.startCoordinates[0];
-                        break;
-
-                    case "Medicine":
-                        objScript.vehicles[1].GetComponent<RectTransform>().localPosition = objScript.startCoordinates[1];
-                        break;
-
-                    case "Fire":
-                        objScript.vehicles[2].GetComponent<RectTransform>().localPosition = objScript.startCoordinates[2];
-                        break;
-
-                    case "Bus":
-                        objScript.vehicles[3].GetComponent<RectTransform>().localPosition = objScript.startCoordinates[3];
-                        break;
-
-                    case "B2":
-                        objScript.vehicles[4].GetComponent<RectTransform>().localPosition = objScript.startCoordinates[4];
-                        break;
-
-                    case "Cement":
-                        objScript.vehicles[5].GetComponent<RectTransform>().localPosition = objScript.startCoordinates[5];
-                        break;
-
-                    case "E46":
-                        objScript.vehicles[6].GetComponent<RectTransform>().localPosition = objScript.startCoordinates[6];
-                        break;
-
-                    case "E61":
-                        objScript.vehicles[7].GetComponent<RectTransform>().localPosition = objScript.startCoordinates[7];
-                        break;
-
-                    case "Eskavators":
-                        objScript.vehicles[8].GetComponent<RectTransform>().localPosition = objScript.startCoordinates[8];
-                        break;
-
-                    case "Police":
-                        objScript.vehicles[9].GetComponent<RectTransform>().localPosition = objScript.startCoordinates[9];
-                        break;
-
-                    case "Traktors":
-                        objScript.vehicles[10].GetComponent<RectTransform>().localPosition = objScript.startCoordinates[10];
-                        break;
-
-                    case "Traktors2":
-                        objScript.vehicles[11].GetComponent<RectTransform>().localPosition = objScript.startCoordinates[11];
-                        break;
-
-                    default:
-                        Debug.Log("Unknown tag detected!");
-                        break;
-                }
+                // Nepareizi novietots
+                objectScript.rightPlace = false;
+                objectScript.effects.PlayOneShot(objectScript.audioCli[1]);
+                // Atgriež sākumā (ja vēlaties)
             }
         }
+        else
+        {
+            // Nepareizs objekts
+            objectScript.rightPlace = false;
+            objectScript.effects.PlayOneShot(objectScript.audioCli[1]);
+        }
     }
+}
+
+void PlaySound(string tag)
+{
+    switch (tag)
+    {
+        case "Garbage": objectScript.effects.PlayOneShot(objectScript.audioCli[2]); break;
+        case "Medicine": objectScript.effects.PlayOneShot(objectScript.audioCli[3]); break;
+        case "Fire": objectScript.effects.PlayOneShot(objectScript.audioCli[4]); break;
+        case "Bus": objectScript.effects.PlayOneShot(objectScript.audioCli[5]); break;
+        case "B2": objectScript.effects.PlayOneShot(objectScript.audioCli[6]); break;
+        case "Cement": objectScript.effects.PlayOneShot(objectScript.audioCli[7]); break;
+        case "E46": objectScript.effects.PlayOneShot(objectScript.audioCli[8]); break;
+        case "E61": objectScript.effects.PlayOneShot(objectScript.audioCli[9]); break;
+        case "Eskavators": objectScript.effects.PlayOneShot(objectScript.audioCli[10]); break;
+        case "Police": objectScript.effects.PlayOneShot(objectScript.audioCli[11]); break;
+        case "Traktors": objectScript.effects.PlayOneShot(objectScript.audioCli[12]); break;
+        case "Traktors2": objectScript.effects.PlayOneShot(objectScript.audioCli[13]); break;
+    }
+}
 }

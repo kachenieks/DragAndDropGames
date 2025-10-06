@@ -14,6 +14,8 @@ public class ObstaclesControlerScript : MonoBehaviour
     private CanvasGroup canvasGroup;
     private RectTransform rectTransform;
     private bool isFadingOut = false;
+    private bool isExploding = false;
+
     private Image image;
     private Color originalColor;
 
@@ -56,32 +58,97 @@ public class ObstaclesControlerScript : MonoBehaviour
             StartCoroutine(FadeOutAndDestroy());
         }
 
-        if(ObjectScript.drag && !isFadingOut && 
-    RectTransformUtility.RectangleContainsScreenPoint(
-        rectTransform, Input.mousePosition, Camera.main))
-{
-    Debug.Log("Obstacle hit by drag");
-    if(ObjectScript.lastDragged != null)
-    {
-        StartCoroutine(ShrinkAndDestroy(ObjectScript.lastDragged, 0.5f));
-        ObjectScript.lastDragged = null;
-        ObjectScript.drag = false;
+        // Ja neko nevelk un kursors ir uz objekta, tad iznīcina
+        if(CompareTag("Bomb") && !isExploding && RectTransformUtility.RectangleContainsScreenPoint(rectTransform, Input.mousePosition, Camera.main))
+        {
+            Debug.Log("Bomb hit by cursor (without drag)");
+            TriggerExplosion();
+        }
+        
+        
+
+        if (ObjectScript.drag && !isFadingOut &&
+        RectTransformUtility.RectangleContainsScreenPoint(
+            rectTransform, Input.mousePosition, Camera.main))
+        {
+            Debug.Log("Obstacle hit by drag");
+            if (ObjectScript.lastDragged != null)
+            {
+                StartCoroutine(ShrinkAndDestroy(ObjectScript.lastDragged, 0.5f));
+                ObjectScript.lastDragged = null;
+                ObjectScript.drag = false;
+            }
+
+            if(CompareTag("Bomb"))
+                StartToDestroy(Color.red);
+
+            else
+                StartToDestroy(Color.cyan);
+
+            
+        }
     }
 
-    // ❌ NOŅEMTS: lidojošais objekts netiek iznīcināts
-    // StartCoroutine(FadeOutAndDestroy());
-    // isFadingOut = true;
-
-    // ✅ Efekti paliek
-    image.color = Color.cyan;
-    StartCoroutine(RecoverColor());
-    StartCoroutine(Vibrate());
-
-    if(objectScript.effects != null && objectScript.audioCli != null)
+    public void TriggerExplosion()
     {
-        objectScript.effects.PlayOneShot(objectScript.audioCli[14]);
+        isExploding = true;
+        objectScript.effects.PlayOneShot(objectScript.audioCli[15], 5f);
+
+        if (TryGetComponent<Animator>(out Animator animator))
+        {
+            animator.SetBool("Explode", true);
+        }
+
+        image.color = Color.red;
+        StartCoroutine(RecoverColor(0.4f));
+        StartCoroutine(Vibrate());
+        StartCoroutine(WaitBeforeExplode());
     }
-}
+
+    IEnumerator WaitBeforeExplode()
+    {
+        float radius = 0;
+        if (TryGetComponent<CircleCollider2D>(out CircleCollider2D collider))
+        {
+            radius = collider.radius * rectTransform.lossyScale.x;
+            ExplodeAndDestroyNearbyObjects(radius);
+            yield return new WaitForSeconds(1f);
+            Destroy(gameObject);
+            //....
+        }
+    }
+
+    void ExplodeAndDestroyNearbyObjects(float radius)
+    {
+        Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, radius);
+        foreach (Collider2D hit in hits)
+        {
+            if (hit != null && hit.gameObject != gameObject)
+            {
+                ObstaclesControlerScript obj = hit.GetComponent<ObstaclesControlerScript>();
+                if (obj != null && !obj.isExploding)
+                {
+                    obj.StartToDestroy(Color.cyan);
+                }
+            }
+        }
+    }
+
+    public void StartToDestroy(Color c)
+    {
+        if (!isFadingOut)
+        {
+            StartCoroutine(FadeOutAndDestroy());
+            isFadingOut = true;
+
+            image.color = c;
+            StartCoroutine(RecoverColor(0.5f));
+            
+            StartCoroutine(Vibrate());
+            objectScript.effects.PlayOneShot(objectScript.audioCli[15]);
+            
+        }
+        
     }
 
     IEnumerator FadeIn()
@@ -132,9 +199,9 @@ public class ObstaclesControlerScript : MonoBehaviour
         Destroy(target);
     }
 
-    IEnumerator RecoverColor()
+    IEnumerator RecoverColor(float seconds)
     {
-        yield return new WaitForSeconds(0.5f);
+        yield return new WaitForSeconds(seconds);
         image.color = originalColor;
     }
 
@@ -171,7 +238,7 @@ else
 
     // Efekti
     image.color = Color.cyan;
-    StartCoroutine(RecoverColor());
+    StartCoroutine(RecoverColor(5f));
     StartCoroutine(Vibrate());
 
     if (objectScript != null && objectScript.effects != null && objectScript.audioCli != null)

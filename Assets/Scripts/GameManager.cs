@@ -134,6 +134,8 @@ void Win()
         rt.anchoredPosition = new Vector2(i * 60 - 60, 0); // Centrēt
     }
 
+    // Pārvieto winPanel uz Canvas hierarhijas beigām (visu objektu virspusē)
+    winPanel.transform.SetAsLastSibling();
     winPanel.SetActive(true);
 }
     void RestartLevel()

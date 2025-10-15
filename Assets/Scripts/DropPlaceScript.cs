@@ -18,22 +18,16 @@ public class DropPlaceScript : MonoBehaviour, IDropHandler
 
     public void OnDrop(PointerEventData eventData) 
 {
-    if ((eventData.pointerDrag != null) && Input.GetMouseButtonUp(0))
+    if (eventData.pointerDrag != null)
     {
+        // 👇 Paziņo, ka tika nometts uz DropPlace
+        var dragScript = eventData.pointerDrag.GetComponent<DragAndDropScript>();
+        if (dragScript != null)
+            dragScript.MarkAsDroppedOnDropPlace();
+
         if (eventData.pointerDrag.tag.Equals(tag)) 
         {
-            // 👇 Rotācijas un mērogošanas pārbaude
-            float placeZRot = eventData.pointerDrag.GetComponent<RectTransform>().transform.eulerAngles.z;
-            float vehicleZRot = GetComponent<RectTransform>().transform.eulerAngles.z;
-            float rotDiff = Mathf.Abs(placeZRot - vehicleZRot);
-            Debug.Log("Rotation difference: " + rotDiff);
-
-            Vector3 placeSiz = eventData.pointerDrag.GetComponent<RectTransform>().localScale;
-            Vector3 vehicleSiz = GetComponent<RectTransform>().localScale;
-            float xSizeDiff = Mathf.Abs(placeSiz.x - vehicleSiz.x);
-            float ySizeDiff = Mathf.Abs(placeSiz.y - vehicleSiz.y);
-            Debug.Log("X size difference: " + xSizeDiff);
-            Debug.Log("Y size difference: " + ySizeDiff);
+            // ... (rotācijas un izmēra pārbaude)
 
             if ((rotDiff <= 5 || (rotDiff >= 355 && rotDiff <= 360)) &&
                 (xSizeDiff <= 0.05f && ySizeDiff <= 0.05f))
@@ -41,29 +35,26 @@ public class DropPlaceScript : MonoBehaviour, IDropHandler
                 Debug.Log("Correct place");
                 objectScript.rightPlace = true;
 
-                // Paziņo GameManager
                 GameManager gm = FindObjectOfType<GameManager>();
                 gm?.OnVehicleCorrectlyPlaced();
 
-                // Novieto objektu precīzi
-                eventData.pointerDrag.GetComponent<RectTransform>().anchoredPosition = GetComponent<RectTransform>().anchoredPosition;
-                eventData.pointerDrag.GetComponent<RectTransform>().localRotation = GetComponent<RectTransform>().localRotation;
-                eventData.pointerDrag.GetComponent<RectTransform>().localScale = GetComponent<RectTransform>().localScale;
+                // Novieto precīzi
+                var rt = eventData.pointerDrag.GetComponent<RectTransform>();
+                rt.anchoredPosition = GetComponent<RectTransform>().anchoredPosition;
+                rt.localRotation = GetComponent<RectTransform>().localRotation;
+                rt.localScale = GetComponent<RectTransform>().localScale;
 
-                // Skaņas
                 PlaySound(eventData.pointerDrag.tag);
             }
             else
             {
-                // Nepareizi novietots
+                // Nepareizi novietots — rightPlace = false (atgriešanu veic DragAndDropScript)
                 objectScript.rightPlace = false;
                 objectScript.effects.PlayOneShot(objectScript.audioCli[1]);
-                // Atgriež sākumā (ja vēlaties)
             }
         }
         else
         {
-            // Nepareizs objekts
             objectScript.rightPlace = false;
             objectScript.effects.PlayOneShot(objectScript.audioCli[1]);
         }

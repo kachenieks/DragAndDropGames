@@ -39,55 +39,58 @@ public class ObstaclesControlerScript : MonoBehaviour
     }
 
     // Update is called once per frame
-    void Update()
+    // ... iepriekšējais kods ...
+
+void Update()
+{
+    float waveOffset = Mathf.Sin(Time.time * waveFrequency) * waveAmplitude;
+    rectTransform.anchoredPosition += new Vector2(-speed * Time.deltaTime, waveOffset * Time.deltaTime);
+    
+    // Iznīcināšana, kad iziet ārpus ekrāna
+    if ((speed > 0 && transform.position.x < (screenBoundriesScript.minX + 80)) ||
+        (speed < 0 && transform.position.x > (screenBoundriesScript.maxX - 80)))
     {
-        float waveOffset = Mathf.Sin(Time.time * waveFrequency) * waveAmplitude;
-        rectTransform.anchoredPosition += new Vector2(-speed * Time.deltaTime, waveOffset * Time.deltaTime);
-        
-        // Iznīcinās ja lido pa kreisi
-        if(speed > 0 && transform.position.x < (screenBoundriesScript.minX + 80) && !isFadingOut)
+        if (!isFadingOut)
         {
             isFadingOut = true;
             StartCoroutine(FadeOutAndDestroy());
-        }
-        // Iznīcinās ja lidos pa labi
-
-        if (speed < 0 && transform.position.x > (screenBoundriesScript.maxX - 80) && !isFadingOut)
-        {
-            isFadingOut = true;
-            StartCoroutine(FadeOutAndDestroy());
-        }
-
-        // Ja neko nevelk un kursors ir uz objekta, tad iznīcina
-        if(CompareTag("Bomb") && !isExploding && RectTransformUtility.RectangleContainsScreenPoint(rectTransform, Input.mousePosition, Camera.main))
-        {
-            Debug.Log("Bomb hit by cursor (without drag)");
-            TriggerExplosion();
-        }
-        
-        
-
-        if (ObjectScript.drag && !isFadingOut &&
-        RectTransformUtility.RectangleContainsScreenPoint(
-            rectTransform, Input.mousePosition, Camera.main))
-        {
-            Debug.Log("Obstacle hit by drag");
-            if (ObjectScript.lastDragged != null)
-            {
-                StartCoroutine(ShrinkAndDestroy(ObjectScript.lastDragged, 0.5f));
-                ObjectScript.lastDragged = null;
-                ObjectScript.drag = false;
-            }
-
-            if(CompareTag("Bomb"))
-                StartToDestroy(Color.red);
-
-            else
-                StartToDestroy(Color.cyan);
-
-            
         }
     }
+
+    // Bomba bez vilkšanas
+    if (CompareTag("Bomb") && !isExploding && 
+        RectTransformUtility.RectangleContainsScreenPoint(rectTransform, Input.mousePosition, Camera.main))
+    {
+        TriggerExplosion();
+    }
+
+    // ✅ SASKARE AR OBSTACLE KAMĒR VILK MAŠĪNU → ZAUDĒJUMS
+    if (ObjectScript.drag && !isFadingOut &&
+        RectTransformUtility.RectangleContainsScreenPoint(rectTransform, Input.mousePosition, Camera.main))
+    {
+        if (ObjectScript.lastDragged != null)
+        {
+            // 👇 TIEŠI ŠEIT IZSAUC ZAUDĒJUMU
+            GameManager.Instance?.OnVehicleDestroyed();
+
+            Destroy(ObjectScript.lastDragged);
+            ObjectScript.lastDragged = null;
+            ObjectScript.drag = false;
+        }
+
+        // Efekti
+        image.color = CompareTag("Bomb") ? Color.red : Color.cyan;
+        StartCoroutine(RecoverColor(0.5f));
+        StartCoroutine(Vibrate());
+
+        if (objectScript != null && objectScript.effects != null && objectScript.audioCli.Length > 14)
+        {
+            objectScript.effects.PlayOneShot(objectScript.audioCli[14]);
+        }
+    }
+}
+
+// ... pārējais kods ...
 
     public void TriggerExplosion()
     {

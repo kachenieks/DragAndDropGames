@@ -8,12 +8,10 @@ public class DragAndDropScript : MonoBehaviour, IPointerDownHandler, IBeginDragH
     private ObjectScript objectScript;
     private ScreenBoundriesScript screenBoundries;
 
-    // 👇 Sākuma stāvoklis
     private Vector3 originalLocalPosition;
     private Quaternion originalLocalRotation;
     private Vector3 originalLocalScale;
 
-    // 👇 Jauns: vai tika nometts uz DropPlace
     private bool wasDroppedOnDropPlace = false;
 
     void Start()
@@ -23,11 +21,9 @@ public class DragAndDropScript : MonoBehaviour, IPointerDownHandler, IBeginDragH
             canvasGroup = gameObject.AddComponent<CanvasGroup>();
 
         rectTransform = GetComponent<RectTransform>();
-
         objectScript = FindObjectOfType<ObjectScript>();
         screenBoundries = FindObjectOfType<ScreenBoundriesScript>();
 
-        // Saglabā sākotnējo stāvokli
         originalLocalPosition = rectTransform.anchoredPosition;
         originalLocalRotation = rectTransform.localRotation;
         originalLocalScale = rectTransform.localScale;
@@ -53,7 +49,7 @@ public class DragAndDropScript : MonoBehaviour, IPointerDownHandler, IBeginDragH
             transform.SetAsLastSibling();
 
             ObjectScript.lastDragged = gameObject;
-            wasDroppedOnDropPlace = false; // ⚠️ Reset
+            wasDroppedOnDropPlace = false;
 
             if (screenBoundries != null)
             {
@@ -86,29 +82,31 @@ public class DragAndDropScript : MonoBehaviour, IPointerDownHandler, IBeginDragH
             canvasGroup.blocksRaycasts = true;
             canvasGroup.alpha = 1.0f;
 
-            // ✅ Atgriež sākumā TIKAI ja:
-            // - tika nometts uz DropPlace (wasDroppedOnDropPlace = true)
-            // - un tas bija NEPAREIZS (rightPlace = false)
-            if (wasDroppedOnDropPlace && objectScript != null && !objectScript.rightPlace)
+            // ✅ Ja tika nometts uz DropPlace
+            if (wasDroppedOnDropPlace)
             {
-                rectTransform.anchoredPosition = originalLocalPosition;
-                rectTransform.localRotation = originalLocalRotation;
-                rectTransform.localScale = originalLocalScale;
+                if (objectScript != null && objectScript.rightPlace)
+                {
+                    // Pareizi novietots — bloķē
+                    canvasGroup.blocksRaycasts = false;
+                    ObjectScript.lastDragged = null;
+                    objectScript.rightPlace = false; // reset
+                }
+                else
+                {
+                    // ❌ Nepareizi novietots uz DropPlace → atgriež sākumā
+                    rectTransform.anchoredPosition = originalLocalPosition;
+                    rectTransform.localRotation = originalLocalRotation;
+                    rectTransform.localScale = originalLocalScale;
+                }
             }
-            else if (objectScript != null && objectScript.rightPlace)
-            {
-                // Pareizi novietots — bloķē
-                canvasGroup.blocksRaycasts = false;
-                ObjectScript.lastDragged = null;
-                objectScript.rightPlace = false; // reset
-            }
+            // ✅ Ja nometts uz tukšas vietas → PALIEK TUR, kur nometi (nekas nedara)
+            // (nekādas darbības nav nepieciešamas)
 
-            // Reset
             wasDroppedOnDropPlace = false;
         }
     }
 
-    // 👇 Jaunu metodi, ko izsauc DropPlaceScript
     public void MarkAsDroppedOnDropPlace()
     {
         wasDroppedOnDropPlace = true;

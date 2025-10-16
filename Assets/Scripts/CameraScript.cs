@@ -1,58 +1,83 @@
 using UnityEngine;
 
-public class CameraScript : MonoBehaviour
+public class CameraScript : MonoBehaviour 
 {
-    // 👇 IESTATI ŠOS DIVUS SKAITĻUS PĒC SAVAS KARTES!
-    public float worldWidth = 1600f;   // Kopējais platums (piemēram, no -800 līdz +800)
-    public float worldHeight = 900f;   // Kopējais augstums (piemēram, no -450 līdz +450)
+    public float maxZoom = 530f;
+    public float minZoom = 1f;
+    public float panSpeed = 6f;
+    
+    Vector3 bottomLeft, topRight;
+    float cameraMaxX, cameraMinX, cameraMaxY, cameraMinY, x, y;
+    float initialZoom;
+    public Camera cam;
 
-    public float minZoom = 20f;        // Cik tuvu vari iezumot (mazāk = tuvāk)
-    public float zoomSpeed = 80f;      // Zoom ātrums
-    public float panSpeed = 10f;
-
-    private Camera cam;
-    private float startZoom;
-
-    void Start()
+    void Start() 
     {
         cam = GetComponent<Camera>();
-        float aspect = (float)Screen.width / Screen.height; // Parasti 1.777 (16:9)
-
-        float zoomForHeight = worldHeight / 2f;
-        float zoomForWidth = (worldWidth / 2f) / aspect;
-
-        startZoom = Mathf.Max(zoomForHeight, zoomForWidth);
-
-        cam.orthographicSize = startZoom; // ✅ Sāk ar "pilnekrāna" skatu
+        initialZoom = cam.orthographicSize;
+        topRight = cam.ScreenToWorldPoint(
+            new Vector3(cam.pixelWidth, cam.pixelHeight, -transform.position.z));
+        bottomLeft = cam.ScreenToWorldPoint(
+            new Vector3(0, 0, -transform.position.z));
+        cameraMaxX = topRight.x;
+        cameraMinX = bottomLeft.x;
+        cameraMaxY = topRight.y;
+        cameraMinY = bottomLeft.y;
     }
 
-    void Update()
+    void Update() 
     {
-        // Pārvietošanās
-        float x = Input.GetAxis("Mouse X") * panSpeed;
-        float y = Input.GetAxis("Mouse Y") * panSpeed;
+        x = Input.GetAxis("Mouse X") * panSpeed;
+        y = Input.GetAxis("Mouse Y") * panSpeed;
         transform.Translate(x, y, 0);
 
-        // Zoom
-        float scroll = Input.mouseScrollDelta.y;
-        if (scroll != 0)
+        if (Input.GetAxis("Mouse ScrollWheel") > 0)
         {
-            cam.orthographicSize -= scroll * zoomSpeed * Time.deltaTime * 10f;
-            cam.orthographicSize = Mathf.Clamp(cam.orthographicSize, minZoom, startZoom);
+            if (cam.orthographicSize > minZoom)
+            {
+                cam.orthographicSize = cam.orthographicSize - 50f;
+            }
+        }
+        else if (Input.GetAxis("Mouse ScrollWheel") < 0)
+        {
+            if (cam.orthographicSize < maxZoom)
+            {
+                cam.orthographicSize = cam.orthographicSize + 50f;
+            }
         }
 
-        // Ierobežo kustību
-        float camHeight = cam.orthographicSize;
-        float camWidth = cam.orthographicSize * cam.aspect;
+        topRight = cam.ScreenToWorldPoint(
+            new Vector3(cam.pixelWidth, cam.pixelHeight, -transform.position.z));
+        bottomLeft = cam.ScreenToWorldPoint(
+            new Vector3(0, 0, -transform.position.z));
 
-        float leftBound = -worldWidth / 2f + camWidth;
-        float rightBound = worldWidth / 2f - camWidth;
-        float bottomBound = -worldHeight / 2f + camHeight;
-        float topBound = worldHeight / 2f - camHeight;
-
-        Vector3 pos = transform.position;
-        pos.x = Mathf.Clamp(pos.x, leftBound, rightBound);
-        pos.y = Mathf.Clamp(pos.y, bottomBound, topBound);
-        transform.position = pos;
+        if (topRight.x > cameraMaxX)
+        {
+            transform.position = new Vector3(
+                transform.position.x - (topRight.x - cameraMaxX),
+                transform.position.y,
+                transform.position.z);
+        }
+        if (topRight.y > cameraMaxY)
+        {
+            transform.position = new Vector3(
+                transform.position.x,
+                transform.position.y - (topRight.y - cameraMaxY),
+                transform.position.z);
+        }
+        if (bottomLeft.x < cameraMinX)
+        {
+            transform.position = new Vector3(
+                transform.position.x + (cameraMinX - bottomLeft.x),
+                transform.position.y,
+                transform.position.z);
+        }
+        if (bottomLeft.y < cameraMinY)
+        {
+            transform.position = new Vector3(
+                transform.position.x,
+                transform.position.y + (cameraMinY - bottomLeft.y),
+                transform.position.z);
+        }
     }
 }

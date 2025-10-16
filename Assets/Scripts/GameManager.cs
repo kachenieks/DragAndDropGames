@@ -1,4 +1,3 @@
-// GameManager.cs
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -10,7 +9,7 @@ public class GameManager : MonoBehaviour
 {
     public List<GameObject> vehiclePrefabs;
     public List<GameObject> dropPlacePrefabs;
-    public RectTransform canvasRect; // Canvas RectTransform
+    public RectTransform canvasRect;
 
     public GameObject winPanel;
     public TMP_Text winTimeText;
@@ -19,15 +18,24 @@ public class GameManager : MonoBehaviour
     public Button menuButton;
     public GameTimer gameTimer;
 
+    public GameObject losePanel;
+    public TMP_Text loseTimeText;
+    public Button loseRestartButton;
+    public Button loseMenuButton;
+    public TMP_Text loseHeaderText; // "You Lost" teksts
+
+    public GameObject starPrefab;
+    public Transform starsContainer;
+
     private int totalVehicles;
     private int correctPlaced = 0;
 
-    public GameObject starPrefab;      // Jūsu zvaigznes prefabu
-    public Transform starsContainer;  // Panel, kurā būs zvaigznes
-    
+    public static GameManager Instance;
 
     void Start()
     {
+        Instance = this;
+
         if (vehiclePrefabs.Count != dropPlacePrefabs.Count)
         {
             Debug.LogError("Vehicle and drop place counts must match!");
@@ -38,27 +46,25 @@ public class GameManager : MonoBehaviour
         SpawnAll();
         gameTimer.StartTimer();
 
-        // Pogu listeneri
         restartButton.onClick.AddListener(RestartLevel);
         menuButton.onClick.AddListener(ReturnToMenu);
+        loseRestartButton.onClick.AddListener(RestartLevel);
+        loseMenuButton.onClick.AddListener(ReturnToMenu);
 
-        // Sākumā uzvaras logs ir slēpts
         winPanel.SetActive(false);
+        losePanel.SetActive(false);
     }
 
     void SpawnAll()
     {
-        // Random pozīcijas visā Canvas robežās
-        var allPositions = GenerateRandomPositions(totalVehicles * 2); // 2x vairāk: viens komplekts drop, viens vehicle
+        var allPositions = GenerateRandomPositions(totalVehicles * 2);
 
-        // Pirmie N = drop places
         for (int i = 0; i < dropPlacePrefabs.Count; i++)
         {
             GameObject dp = Instantiate(dropPlacePrefabs[i], canvasRect);
             dp.GetComponent<RectTransform>().anchoredPosition = allPositions[i];
         }
 
-        // Nākamie N = transportlīdzekļi
         for (int i = 0; i < vehiclePrefabs.Count; i++)
         {
             GameObject v = Instantiate(vehiclePrefabs[i], canvasRect);
@@ -71,7 +77,6 @@ public class GameManager : MonoBehaviour
         List<Vector2> positions = new List<Vector2>();
         Vector2 canvasSize = canvasRect.sizeDelta;
 
-        // Atstājam robežu, lai objekti neizietu ārā
         float margin = 150f;
         float minX = -canvasSize.x / 2f + margin;
         float maxX = canvasSize.x / 2f - margin;
@@ -90,7 +95,6 @@ public class GameManager : MonoBehaviour
                 float y = Random.Range(minY, maxY);
                 pos = new Vector2(x, y);
 
-                // Pārbauda, vai pietiekami tālu no citiem (min 180px)
                 valid = positions.All(p => Vector2.Distance(p, pos) > 180f);
                 attempts++;
             } while (!valid && attempts < 50);
@@ -112,32 +116,50 @@ public class GameManager : MonoBehaviour
         }
     }
 
-void Win()
-{
-    gameTimer.StopTimer();
-    float time = gameTimer.GetElapsedTime();
-    int stars = time < 60f ? 3 : (time < 90f ? 2 : 1);
-
-    winTimeText.text = "Laiks: " + gameTimer.timerText.text;
-    
-    // Noņem iepriekšējās zvaigznes
-    foreach (Transform child in starsContainer)
-        Destroy(child.gameObject);
-
-    // Izveido jaunas zvaigznes
-    for (int i = 0; i < stars; i++)
+    public void OnVehicleDestroyed()
     {
-        GameObject star = Instantiate(starPrefab, starsContainer);
-        RectTransform rt = star.GetComponent<RectTransform>();
-        
-        // Manuāla pozīcija — 60px attālums starp zvaigznēm
-        rt.anchoredPosition = new Vector2(i * 60 - 60, 0); // Centrēt
+        Debug.Log("Mašīna iznīcināta! Zaudējums!");
+        Lose();
     }
 
-    // Pārvieto winPanel uz Canvas hierarhijas beigām (visu objektu virspusē)
-    winPanel.transform.SetAsLastSibling();
-    winPanel.SetActive(true);
+    void Win()
+    {
+        gameTimer.StopTimer();
+        float time = gameTimer.GetElapsedTime();
+        int stars = time < 60f ? 3 : (time < 90f ? 2 : 1);
+
+        winTimeText.text = "Laiks: " + gameTimer.timerText.text;
+
+        foreach (Transform child in starsContainer)
+            Destroy(child.gameObject);
+
+        for (int i = 0; i < stars; i++)
+        {
+            GameObject star = Instantiate(starPrefab, starsContainer);
+            RectTransform rt = star.GetComponent<RectTransform>();
+            rt.anchoredPosition = new Vector2(i * 60 - 60, 0);
+        }
+
+        winPanel.transform.SetAsLastSibling();
+        winPanel.SetActive(true);
+        losePanel.SetActive(false);
+    }
+
+void Lose()
+{
+    gameTimer.StopTimer();
+
+    if (loseHeaderText != null)
+        loseHeaderText.text = "YOU LOST!";
+
+    if (loseTimeText != null)
+            loseTimeText.text = "TIME: " + gameTimer.timerText.text;
+
+    losePanel.SetActive(true);
+        winPanel.SetActive(false);
+    losePanel.transform.SetAsLastSibling();
 }
+
     void RestartLevel()
     {
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);

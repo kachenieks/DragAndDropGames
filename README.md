@@ -41,3 +41,9 @@ From the **win screen**, you can choose to:
 2. Go back to the main menu
 <img width="1919" height="1079" alt="Ekrānuzņēmums 2025-10-13 124343" src="https://github.com/user-attachments/assets/80da4c04-fec6-49d5-b65b-d781e8ed66f8" />
 
+
+**Reset screen** you can choose to:
+1. Restart the game
+2. Go back to the main menu
+<img width="1919" height="1079" alt="image" src="https://github.com/user-attachments/assets/2990ddfc-e13c-4434-805e-9d669366e706" />
+

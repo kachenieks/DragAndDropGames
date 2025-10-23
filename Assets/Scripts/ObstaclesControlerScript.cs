@@ -41,56 +41,80 @@ public class ObstaclesControlerScript : MonoBehaviour
     // Update is called once per frame
     // ... iepriekšējais kods ...
 
-void Update()
-{
-    float waveOffset = Mathf.Sin(Time.time * waveFrequency) * waveAmplitude;
-    rectTransform.anchoredPosition += new Vector2(-speed * Time.deltaTime, waveOffset * Time.deltaTime);
-    
-    // Iznīcināšana, kad iziet ārpus ekrāna
-    if ((speed > 0 && transform.position.x < (screenBoundriesScript.minX + 80)) ||
-        (speed < 0 && transform.position.x > (screenBoundriesScript.maxX - 80)))
+    void Update()
     {
-        if (!isFadingOut)
+        float waveOffset = Mathf.Sin(Time.time * waveFrequency) * waveAmplitude;
+        rectTransform.anchoredPosition += new Vector2(-speed * Time.deltaTime, waveOffset * Time.deltaTime);
+
+        // Iznīcināšana, kad iziet ārpus ekrāna
+        if ((speed > 0 && transform.position.x < (screenBoundriesScript.minX + 80)) ||
+            (speed < 0 && transform.position.x > (screenBoundriesScript.maxX - 80)))
         {
-            isFadingOut = true;
-            StartCoroutine(FadeOutAndDestroy());
+            if (!isFadingOut)
+            {
+                isFadingOut = true;
+                StartCoroutine(FadeOutAndDestroy());
+            }
+        }
+
+        // Bomba bez vilkšanas
+        Vector2 inputPosition;
+        if (!TryGetInputPosition(out inputPosition))
+            return;
+
+        if (CompareTag("Bomb") && !isExploding &&
+            RectTransformUtility.RectangleContainsScreenPoint(rectTransform, inputPosition, Camera.main))
+        {
+            TriggerExplosion();
+        }
+
+        // ✅ SASKARE AR OBSTACLE KAMĒR VILK MAŠĪNU → ZAUDĒJUMS
+        if (ObjectScript.drag && !isFadingOut &&
+            RectTransformUtility.RectangleContainsScreenPoint(rectTransform, inputPosition, Camera.main))
+        {
+            if (ObjectScript.lastDragged != null)
+            {
+                // 👇 TIEŠI ŠEIT IZSAUC ZAUDĒJUMU
+                GameManager.Instance?.OnVehicleDestroyed();
+
+                Destroy(ObjectScript.lastDragged);
+                ObjectScript.lastDragged = null;
+                ObjectScript.drag = false;
+            }
+
+            // Efekti
+            image.color = CompareTag("Bomb") ? Color.red : Color.cyan;
+            StartCoroutine(RecoverColor(0.5f));
+            StartCoroutine(Vibrate());
+
+            if (objectScript != null && objectScript.effects != null && objectScript.audioCli.Length > 14)
+            {
+                objectScript.effects.PlayOneShot(objectScript.audioCli[14]);
+            }
         }
     }
 
-    // Bomba bez vilkšanas
-    if (CompareTag("Bomb") && !isExploding && 
-        RectTransformUtility.RectangleContainsScreenPoint(rectTransform, Input.mousePosition, Camera.main))
+    bool TryGetInputPosition(out Vector2 position)
     {
-        TriggerExplosion();
+        #if UNITY_EDITOR || UNITY_STANDALONE
+            position = Input.mousePosition;
+            return true;
+
+        #elif UNITY_ANDROID
+            if (Input.touchCount > 0)
+            {
+                position = Input.GetTouch(0).position;
+                return true;
+            }
+            else
+            {
+                position = Vector2.zero;
+                return false;
+            }
+        #endif
     }
 
-    // ✅ SASKARE AR OBSTACLE KAMĒR VILK MAŠĪNU → ZAUDĒJUMS
-    if (ObjectScript.drag && !isFadingOut &&
-        RectTransformUtility.RectangleContainsScreenPoint(rectTransform, Input.mousePosition, Camera.main))
-    {
-        if (ObjectScript.lastDragged != null)
-        {
-            // 👇 TIEŠI ŠEIT IZSAUC ZAUDĒJUMU
-            GameManager.Instance?.OnVehicleDestroyed();
-
-            Destroy(ObjectScript.lastDragged);
-            ObjectScript.lastDragged = null;
-            ObjectScript.drag = false;
-        }
-
-        // Efekti
-        image.color = CompareTag("Bomb") ? Color.red : Color.cyan;
-        StartCoroutine(RecoverColor(0.5f));
-        StartCoroutine(Vibrate());
-
-        if (objectScript != null && objectScript.effects != null && objectScript.audioCli.Length > 14)
-        {
-            objectScript.effects.PlayOneShot(objectScript.audioCli[14]);
-        }
-    }
-}
-
-// ... pārējais kods ...
+    // ... pārējais kods ...
 
     public void TriggerExplosion()
     {
@@ -210,6 +234,10 @@ void Update()
 
     IEnumerator Vibrate()
     {
+        #if UNITY_ANDROID
+        Handheld.Vibrate();
+        #endif
+
         Vector2 originalPosition = rectTransform.anchoredPosition;
         float duration = 0.3f;
         float elapsed = 0f;

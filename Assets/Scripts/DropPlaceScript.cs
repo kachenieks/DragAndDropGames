@@ -18,7 +18,8 @@ public class DropPlaceScript : MonoBehaviour, IDropHandler
 
     public void OnDrop(PointerEventData eventData) 
 {
-    if (eventData.pointerDrag != null)
+        if (eventData.pointerDrag != null)
+            return;
     {
         // 👇 Paziņo, ka tika nometts uz DropPlace
         var dragScript = eventData.pointerDrag.GetComponent<DragAndDropScript>();

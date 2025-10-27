@@ -1,18 +1,43 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 
+// CHANGES FOR ANDROID
+
 public class DragAndDropScript : MonoBehaviour, IPointerDownHandler, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
     private CanvasGroup canvasGroup;
     private RectTransform rectTransform;
     private ObjectScript objectScript;
     private ScreenBoundriesScript screenBoundries;
+    private Vector3 dragOffsetWorld;
+    private Camera uiCamera;
+    private Canvas canvas;
 
     private Vector3 originalLocalPosition;
     private Quaternion originalLocalRotation;
     private Vector3 originalLocalScale;
 
     private bool wasDroppedOnDropPlace = false;
+
+
+    void Awake()
+    {
+        if (objectScript == null)
+        {
+            objectScript = Object.FindFirstObjectByType<ObjectScript>();
+        }
+
+        if (screenBoundries == null)
+        {
+            screenBoundries = Object.FindFirstObjectByType<ScreenBoundriesScript>();
+        }
+
+        canvas = GetComponentInParent<Canvas>();
+        if (canvas != null)
+            uiCamera = canvas.worldCamera;
+        else
+            Debug.LogWarning("DragAndDropScript: No parent canvas found.");
+    }
 
     void Start()
     {
@@ -31,18 +56,13 @@ public class DragAndDropScript : MonoBehaviour, IPointerDownHandler, IBeginDragH
 
     public void OnPointerDown(PointerEventData eventData)
     {
-        if (Input.GetMouseButton(0))
-        {
             Debug.Log("Vilku: " + name);
             if (objectScript != null && objectScript.effects != null && objectScript.audioCli.Length > 0)
                 objectScript.effects.PlayOneShot(objectScript.audioCli[0]);
-        }
     }
 
     public void OnBeginDrag(PointerEventData eventData)
     {
-        if (Input.GetMouseButton(0))
-        {
             ObjectScript.drag = true;
             canvasGroup.blocksRaycasts = false;
             canvasGroup.alpha = 0.6f;
@@ -51,33 +71,37 @@ public class DragAndDropScript : MonoBehaviour, IPointerDownHandler, IBeginDragH
             ObjectScript.lastDragged = gameObject;
             wasDroppedOnDropPlace = false;
 
-            if (screenBoundries != null)
-            {
-                Vector3 cursorWorldPos = Camera.main.ScreenToWorldPoint(
-                    new Vector3(Input.mousePosition.x, Input.mousePosition.y, screenBoundries.screenPoint.z));
-                rectTransform.position = cursorWorldPos;
-
-                screenBoundries.screenPoint = Camera.main.WorldToScreenPoint(rectTransform.position);
-                screenBoundries.offset = rectTransform.position - Camera.main.ScreenToWorldPoint(
-                    new Vector3(Input.mousePosition.x, Input.mousePosition.y, screenBoundries.screenPoint.z));
-            }
+        Vector3 pointerWorld;
+        if (ScreenPointToWorld(eventData.position, out pointerWorld))
+        {
+            dragOffsetWorld = transform.position - pointerWorld;
         }
+        else
+        {
+            dragOffsetWorld = Vector3.zero;
+        }
+        
+        ObjectScript.lastDragged = eventData.pointerDrag;
     }
 
     public void OnDrag(PointerEventData eventData)
     {
-        if (Input.GetMouseButton(0) && screenBoundries != null)
-        {
-            Vector3 curScreenPoint = new Vector3(Input.mousePosition.x, Input.mousePosition.y, screenBoundries.screenPoint.z);
-            Vector3 curPosition = Camera.main.ScreenToWorldPoint(curScreenPoint) + screenBoundries.offset;
-            rectTransform.position = screenBoundries.GetClampedPosition(curPosition);
-        }
+        Vector3 pointerWorld;
+        if (!ScreenPointToWorld(eventData.position, out pointerWorld))
+            return;
+
+        Vector3 desired = pointerWorld + dragOffsetWorld;
+        desired.z = rectTransform.position.z; // Saglabā oriģinālo Z pozīciju
+        screenBoundries.RecalculateBounds();
+
+        Vector2 clamped = screenBoundries.GetClampedPosition(desired);
+        transform.position = new Vector3(clamped.x, clamped.y, desired.z);
+        
     }
 
     public void OnEndDrag(PointerEventData eventData)
     {
-        if (Input.GetMouseButtonUp(0))
-        {
+        
             ObjectScript.drag = false;
             canvasGroup.blocksRaycasts = true;
             canvasGroup.alpha = 1.0f;
@@ -104,11 +128,23 @@ public class DragAndDropScript : MonoBehaviour, IPointerDownHandler, IBeginDragH
             // (nekādas darbības nav nepieciešamas)
 
             wasDroppedOnDropPlace = false;
-        }
     }
 
     public void MarkAsDroppedOnDropPlace()
     {
         wasDroppedOnDropPlace = true;
+    }
+
+    private bool ScreenPointToWorld(Vector3 screenPoint, out Vector3 worldPoint)
+    {
+        worldPoint = Vector3.zero;
+        if (uiCamera == null)
+            Debug.LogWarning("DragAndDropScript: No UI camera found for ScreenPointToWorld conversion.");
+            return false;
+
+            float z = Mathf.Abs(uiCamera.transform.position.z - transform.position.z);
+            Vector3 sp = new Vector3(screenPoint.x, screenPoint.y, z);
+            worldPoint = uiCamera.ScreenToWorldPoint(sp);
+            return true;
     }
 }

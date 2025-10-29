@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.EventSystems; // pievieno šo, ja vēl nav
 
 public class TransformationScript : MonoBehaviour
 {
@@ -7,13 +8,6 @@ public class TransformationScript : MonoBehaviour
 
     private bool rotateCW, rotateCCW, scaleUpY, scaleDownY, scaleUpX, scaleDownX;
     public static bool isTransforming = false;
-    // [Header("Izmēra ierobežojumi")]
-    // public float minScale = 0.3f;
-    // public float maxScale = 1.05f;
-    // public float scaleSpeed = 0.005f;
-
-    // [Header("Rotācijas ātrums")]
-    // public float rotationSpeed = 15f;
 
     void Update()
     {
@@ -25,40 +19,45 @@ public class TransformationScript : MonoBehaviour
         if (rotateCW)
             rt.Rotate(0, 0, -rotationSpeed * Time.deltaTime);
 
-        if (rotateCWW)
+        if (rotateCCW)
             rt.Rotate(0, 0, rotationSpeed * Time.deltaTime);
 
-        if (scaleUpY && rt.localScale.y < 0.8f)
+        if (scaleUpY)
             rt.localScale += new Vector3(0, scaleSpeed * Time.deltaTime, 0);
 
-        if (scaleDownY && rt.localScale.y > 0.8f)
-            rt.localScale += new Vector3(0, scaleSpeed * Time.deltaTime, 0);
+        if (scaleDownY)
+            rt.localScale -= new Vector3(0, scaleSpeed * Time.deltaTime, 0);
 
-        if (scaleUpX && rt.localScale.y < 0.8f)
+        if (scaleUpX)
             rt.localScale += new Vector3(scaleSpeed * Time.deltaTime, 0, 0);
 
-        if (scaleDownX && rt.localScale.y < 0.8f)
-            rt.localScale += new Vector3(scaleSpeed * Time.deltaTime, 0, 0);
+        if (scaleDownX)
+            rt.localScale -= new Vector3(scaleSpeed * Time.deltaTime, 0, 0);
 
         isTransforming = rotateCW || rotateCCW || scaleUpY || scaleUpX || scaleDownX || scaleDownY;
     }
 
-    public void StartRotateCW(BaseEventData data){rotateCW = true;}
-    public void StartRotateCW(BaseEventData data){rotateCW = false;}
+    // Rotācija CW
+    public void StartRotateCW(BaseEventData data) { rotateCW = true; }
+    public void StopRotateCW(BaseEventData data) { rotateCW = false; }
 
-    public void StartRotateCWW(BaseEventData data){rotateCWW = true;}
-    public void StartRotateCWW(BaseEventData data){rotateCWW = false;}
+    // Rotācija CCW
+    public void StartRotateCCW(BaseEventData data) { rotateCCW = true; }
+    public void StopRotateCCW(BaseEventData data) { rotateCCW = false; }
 
-    public void StartScaleUpY(BaseEventData data){scaleUpY = true;}
-    public void StartScaleUpY(BaseEventData data){scaleUpY = false;}
-    
-    public void StartScaleUpX(BaseEventData data){scaleUpX = false;}
-    public void StartScaleUpX(BaseEventData data){scaleUpX = true;}
+    // Skalēšana Y+
+    public void StartScaleUpY(BaseEventData data) { scaleUpY = true; }
+    public void StopScaleUpY(BaseEventData data) { scaleUpY = false; }
 
-    public void StartScaleDownX(BaseEventData data){scaleDownX = true;}
-    public void StartScaleDownX(BaseEventData data){scaleDownX = false;}
+    // Skalēšana Y-
+    public void StartScaleDownY(BaseEventData data) { scaleDownY = true; }
+    public void StopScaleDownY(BaseEventData data) { scaleDownY = false; }
 
-    public void StartScaleDownY(BaseEventData data){scaleDownY = true;}
-    public void StartScaleDownY(BaseEventData data){scaleDownY = false;}
+    // Skalēšana X+
+    public void StartScaleUpX(BaseEventData data) { scaleUpX = true; }
+    public void StopScaleUpX(BaseEventData data) { scaleUpX = false; }
 
+    // Skalēšana X-
+    public void StartScaleDownX(BaseEventData data) { scaleDownX = true; }
+    public void StopScaleDownX(BaseEventData data) { scaleDownX = false; }
 }

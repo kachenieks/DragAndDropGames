@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine.SceneManagement; // ← ŠO PIEVIENO
 
 public class CameraScript : MonoBehaviour
 {
@@ -23,14 +24,18 @@ public class CameraScript : MonoBehaviour
 
     void Awake()
     {
+        // ✅ ja atrodamies MainMenu scēnā — izslēdzam šo skriptu
+        if (SceneManager.GetActiveScene().name == "MainMenu")
+        {
+            enabled = false;
+            return;
+        }
+
         if (cam == null)
-        {
             cam = GetComponent<Camera>();
-        }
+
         if (screenBoundries == null)
-        {
             screenBoundries = FindFirstObjectByType<ScreenBoundriesScript>();
-        }
     }
 
     void Start()

@@ -47,8 +47,11 @@ public class DragAndDropScript : MonoBehaviour, IPointerDownHandler, IBeginDragH
 
         objectScript = FindObjectOfType<ObjectScript>();
         screenBoundries = FindObjectOfType<ScreenBoundriesScript>();
+    }
 
-        // Saglabājam sākotnējo WORLD pozīciju (nevis anchored!)
+    void Start()
+    {
+        // Saglabā sākuma pozīciju pēc tam, kad objekts jau ir spawnots
         originalWorldPosition = transform.position;
         originalLocalRotation = rectTransform.localRotation;
         originalLocalScale = rectTransform.localScale;
@@ -113,19 +116,24 @@ public class DragAndDropScript : MonoBehaviour, IPointerDownHandler, IBeginDragH
             }
             else
             {
-                // ❌ Nepareizi uz DropPlace → atgriežam sākumā
-                transform.position = originalWorldPosition;
-                rectTransform.localRotation = originalLocalRotation;
-                rectTransform.localScale = originalLocalScale;
+                // ❌ Nepareizs DropPlace
+                ResetToStart();
             }
         }
-        // ✅ Ja nolaists ārpus DropPlace → paliek tur (nekas netiek darīts)
 
+        // 🚫 Ja nav dropots uz DropPlace, paliek tur, kur nometi
         wasDroppedOnDropPlace = false;
     }
 
     public void MarkAsDroppedOnDropPlace()
     {
         wasDroppedOnDropPlace = true;
+    }
+
+    private void ResetToStart()
+    {
+        transform.position = originalWorldPosition;
+        rectTransform.localRotation = originalLocalRotation;
+        rectTransform.localScale = originalLocalScale;
     }
 }

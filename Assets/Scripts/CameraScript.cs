@@ -23,48 +23,61 @@ public class CameraScript : MonoBehaviour
     public float doubleTapMaxDistance = 100f;
 
     void Awake()
-    {
-        // ✅ ja atrodamies MainMenu scēnā — izslēdzam šo skriptu
-        if (SceneManager.GetActiveScene().name == "MainMenu")
-        {
-            enabled = false;
-            return;
-        }
+{
+    if (cam == null)
+        cam = GetComponent<Camera>();
 
-        if (cam == null)
-            cam = GetComponent<Camera>();
+    if (screenBoundries == null)
+        screenBoundries = FindFirstObjectByType<ScreenBoundriesScript>();
+}
 
-        if (screenBoundries == null)
-            screenBoundries = FindFirstObjectByType<ScreenBoundriesScript>();
-    }
 
     void Start()
+{
+    startZoom = cam.orthographicSize;
+    screenBoundries.RecalculateBounds();
+    transform.position = screenBoundries.GetClampedCameraPosition(transform.position);
+
+    // ✅ Automātiski pielāgo ortogrāfisko izmēru atbilstoši ekrāna proporcijai
+    float targetAspect = 19.5f / 9f; // tipiska Android attiecība
+    float currentAspect = (float)Screen.width / Screen.height;
+
+    if (currentAspect > targetAspect)
     {
-        startZoom = cam.orthographicSize;
-        screenBoundries.RecalculateBounds();
-        transform.position = screenBoundries.GetClampedCameraPosition(transform.position);
+        // Ja ekrāns ir platāks (piem., Windows), attālini kameru
+        cam.orthographicSize *= currentAspect / targetAspect;
     }
+}
+
 
     void Update()
+{
+    // ✅ Ja atrodamies MainMenu scēnā — kamera stāv fiksēti
+    if (SceneManager.GetActiveScene().name == "MainMenu")
     {
-        if (TransformationScript.isTransforming) return;
+        transform.position = new Vector3(0f, 0f, -10f);
+        return;
+    }
+
+    if (TransformationScript.isTransforming) return;
 
 #if UNITY_EDITOR || UNITY_STANDALONE
-        DesktopFollowCursor();
-        float scroll = Input.GetAxis("Mouse ScrollWheel");
-        if (Mathf.Abs(scroll) > Mathf.Epsilon)
-        {
-            cam.orthographicSize -= scroll * mouseZoomSpeed;
-        }
+    DesktopFollowCursor();
+    float scroll = Input.GetAxis("Mouse ScrollWheel");
+    if (Mathf.Abs(scroll) > Mathf.Epsilon)
+    {
+        cam.orthographicSize -= scroll * mouseZoomSpeed;
+    }
 #else
-        HandleTouch();
+    HandleTouch();
 #endif
 
-        UpdateMaxZoom();
-        cam.orthographicSize = Mathf.Clamp(cam.orthographicSize, minZoom, maxZoom);
-        screenBoundries.RecalculateBounds();
-        transform.position = screenBoundries.GetClampedCameraPosition(transform.position);
-    }
+    UpdateMaxZoom();
+    cam.orthographicSize = Mathf.Clamp(cam.orthographicSize, minZoom, maxZoom);
+    screenBoundries.RecalculateBounds();
+    transform.position = screenBoundries.GetClampedCameraPosition(transform.position);
+}
+
 
     void DesktopFollowCursor()
     {

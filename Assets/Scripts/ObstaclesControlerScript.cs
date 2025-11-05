@@ -47,8 +47,9 @@ public class ObstaclesControlerScript : MonoBehaviour
         rectTransform.anchoredPosition += new Vector2(-speed * Time.deltaTime, waveOffset * Time.deltaTime);
 
         // Iznīcināšana, kad iziet ārpus ekrāna
-        if ((speed > 0 && transform.position.x < (screenBoundriesScript.minX + 80)) ||
-            (speed < 0 && transform.position.x > (screenBoundriesScript.maxX - 80)))
+        if ((speed > 0 && rectTransform.anchoredPosition.x < screenBoundriesScript.minX - 300f) ||
+            (speed < 0 && rectTransform.anchoredPosition.x > screenBoundriesScript.maxX + 300f))
+
         {
             if (!isFadingOut)
             {

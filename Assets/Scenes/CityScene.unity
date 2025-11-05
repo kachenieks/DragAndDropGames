@@ -598,7 +598,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   gameCanvas: {fileID: 853404330}
   canvasButtons: {fileID: 46394861}
-  showAndroidUIInEditor: 1
+  showAndroidUIInEditor: 0
 --- !u!4 &375153602
 Transform:
   m_ObjectHideFlags: 0
@@ -771,7 +771,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   rotationSpeed: 15
-  scaleSpeed: 0.005
+  scaleSpeed: 0.1
+  minScale: 0.3
+  maxScale: 2
 --- !u!114 &409866530
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1224,7 +1226,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 650dccc8c98564e4187106f33b01e27f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxZoom: 530
   minZoom: 150
   panSpeed: 6
   pinchZoomSpeed: 0.01

@@ -1,10 +1,13 @@
 using UnityEngine;
-using UnityEngine.EventSystems; // pievieno šo, ja vēl nav
+using UnityEngine.EventSystems;
 
 public class TransformationScript : MonoBehaviour
 {
     public float rotationSpeed = 90f;
     public float scaleSpeed = 0.5f;
+
+    public float minScale = 0.7f;  // minimālais izmērs
+    public float maxScale = 1f;  // maksimālais izmērs
 
     private bool rotateCW, rotateCCW, scaleUpY, scaleDownY, scaleUpX, scaleDownX;
     public static bool isTransforming = false;
@@ -16,6 +19,7 @@ public class TransformationScript : MonoBehaviour
 
         RectTransform rt = ObjectScript.lastDragged.GetComponent<RectTransform>();
 
+        // --- MOBILĀS POGAS ---
         if (rotateCW)
             rt.Rotate(0, 0, -rotationSpeed * Time.deltaTime);
 
@@ -23,41 +27,75 @@ public class TransformationScript : MonoBehaviour
             rt.Rotate(0, 0, rotationSpeed * Time.deltaTime);
 
         if (scaleUpY)
-            rt.localScale += new Vector3(0, scaleSpeed * Time.deltaTime, 0);
+            ScaleObject(rt, 0, scaleSpeed * Time.deltaTime, 0);
 
         if (scaleDownY)
-            rt.localScale -= new Vector3(0, scaleSpeed * Time.deltaTime, 0);
+            ScaleObject(rt, 0, -scaleSpeed * Time.deltaTime, 0);
 
         if (scaleUpX)
-            rt.localScale += new Vector3(scaleSpeed * Time.deltaTime, 0, 0);
+            ScaleObject(rt, scaleSpeed * Time.deltaTime, 0, 0);
 
         if (scaleDownX)
-            rt.localScale -= new Vector3(scaleSpeed * Time.deltaTime, 0, 0);
+            ScaleObject(rt, -scaleSpeed * Time.deltaTime, 0, 0);
+
+        // --- KLAVIATŪRAS KONTROLES ---
+        KeyboardControls(rt);
 
         isTransforming = rotateCW || rotateCCW || scaleUpY || scaleUpX || scaleDownX || scaleDownY;
     }
 
-    // Rotācija CW
+    private void KeyboardControls(RectTransform rt)
+    {
+        // ← un → — ROTĀCIJA
+        if (Input.GetKey(KeyCode.LeftArrow))
+            rt.Rotate(0, 0, rotationSpeed * Time.deltaTime);
+        if (Input.GetKey(KeyCode.RightArrow))
+            rt.Rotate(0, 0, -rotationSpeed * Time.deltaTime);
+
+        // ↑ un ↓ — SCALE kopumā
+        if (Input.GetKey(KeyCode.UpArrow))
+            ScaleObject(rt, scaleSpeed * Time.deltaTime, scaleSpeed * Time.deltaTime, 0);
+        if (Input.GetKey(KeyCode.DownArrow))
+            ScaleObject(rt, -scaleSpeed * Time.deltaTime, -scaleSpeed * Time.deltaTime, 0);
+
+        // X — maina platumu
+        if (Input.GetKey(KeyCode.X))
+            ScaleObject(rt, scaleSpeed * Time.deltaTime, 0, 0);
+        if (Input.GetKey(KeyCode.Z)) // lai ir arī pretējais virziens, ja vēlies
+            ScaleObject(rt, -scaleSpeed * Time.deltaTime, 0, 0);
+
+        // Y — maina augstumu
+        if (Input.GetKey(KeyCode.Y))
+            ScaleObject(rt, 0, scaleSpeed * Time.deltaTime, 0);
+        if (Input.GetKey(KeyCode.U)) // lai būtu atpakaļ virziens
+            ScaleObject(rt, 0, -scaleSpeed * Time.deltaTime, 0);
+    }
+
+    private void ScaleObject(RectTransform rt, float x, float y, float z)
+    {
+        Vector3 newScale = rt.localScale + new Vector3(x, y, z);
+
+        // Ierobežo skalas izmērus
+        newScale.x = Mathf.Clamp(newScale.x, minScale, maxScale);
+        newScale.y = Mathf.Clamp(newScale.y, minScale, maxScale);
+        newScale.z = Mathf.Clamp(newScale.z, minScale, maxScale);
+
+        rt.localScale = newScale;
+    }
+
+    // --- Rotācija ---
     public void StartRotateCW(BaseEventData data) { rotateCW = true; }
     public void StopRotateCW(BaseEventData data) { rotateCW = false; }
-
-    // Rotācija CCW
     public void StartRotateCCW(BaseEventData data) { rotateCCW = true; }
     public void StopRotateCCW(BaseEventData data) { rotateCCW = false; }
 
-    // Skalēšana Y+
+    // --- Skalēšana ---
     public void StartScaleUpY(BaseEventData data) { scaleUpY = true; }
     public void StopScaleUpY(BaseEventData data) { scaleUpY = false; }
-
-    // Skalēšana Y-
     public void StartScaleDownY(BaseEventData data) { scaleDownY = true; }
     public void StopScaleDownY(BaseEventData data) { scaleDownY = false; }
-
-    // Skalēšana X+
     public void StartScaleUpX(BaseEventData data) { scaleUpX = true; }
     public void StopScaleUpX(BaseEventData data) { scaleUpX = false; }
-
-    // Skalēšana X-
     public void StartScaleDownX(BaseEventData data) { scaleDownX = true; }
     public void StopScaleDownX(BaseEventData data) { scaleDownX = false; }
 }

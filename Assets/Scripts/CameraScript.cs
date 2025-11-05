@@ -6,7 +6,7 @@ using UnityEngine.SceneManagement; // ← ŠO PIEVIENO
 
 public class CameraScript : MonoBehaviour
 {
-    public float maxZoom = 530f;
+    private float maxZoom;
     public float minZoom = 150f;
     public float panSpeed = 6f;
     float startZoom;
@@ -60,6 +60,7 @@ public class CameraScript : MonoBehaviour
         HandleTouch();
 #endif
 
+        UpdateMaxZoom();
         cam.orthographicSize = Mathf.Clamp(cam.orthographicSize, minZoom, maxZoom);
         screenBoundries.RecalculateBounds();
         transform.position = screenBoundries.GetClampedCameraPosition(transform.position);
@@ -158,17 +159,30 @@ public class CameraScript : MonoBehaviour
         float elapsed = 0f;
         float initialZoom = cam.orthographicSize;
 
+        float targetZoom = maxZoom;
+
         while (elapsed < duration)
         {
             elapsed += Time.deltaTime;
-            cam.orthographicSize = Mathf.Lerp(initialZoom, startZoom, elapsed / duration);
+            cam.orthographicSize = Mathf.Lerp(initialZoom, targetZoom, elapsed / duration);
             screenBoundries.RecalculateBounds();
             transform.position = screenBoundries.GetClampedCameraPosition(transform.position);
             yield return null;
         }
 
-        cam.orthographicSize = startZoom;
+        cam.orthographicSize = targetZoom;
         screenBoundries.RecalculateBounds();
         transform.position = screenBoundries.GetClampedCameraPosition(transform.position);
+    }
+
+    void UpdateMaxZoom()
+    {
+        if (screenBoundries == null || cam == null)
+            return;
+
+        Rect wb = screenBoundries.WorldBounds;
+        float maxZoomHeight = wb.height / 2f;
+        float maxZoomWidth = (wb.width / cam.aspect) / 2f;
+        maxZoom = Mathf.Min(maxZoomHeight, maxZoomWidth);
     }
 }

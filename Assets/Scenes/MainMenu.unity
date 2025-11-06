@@ -700,8 +700,8 @@ Transform:
   m_GameObject: {fileID: 518695911}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -5.7266, y: -8.7767, z: 0}
-  m_LocalScale: {x: 394.2811, y: 394.22485, z: 0.9873888}
+  m_LocalPosition: {x: 187.5073, y: 82.5617, z: 0}
+  m_LocalScale: {x: 729.7281, y: 656.4225, z: 1.5764673}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 853404334}
@@ -2116,7 +2116,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Canvas_Windows: {fileID: 0}
   Canvas_Android: {fileID: 853404330}
-  ForceAndroidUIInEditor: 0
+  ForceAndroidUIInEditor: 1
 --- !u!4 &1748985495
 Transform:
   m_ObjectHideFlags: 0

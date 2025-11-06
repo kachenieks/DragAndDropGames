@@ -22,6 +22,7 @@ public class ObstaclesSpawnScript : MonoBehaviour
     {
         InvokeRepeating(nameof(SpawnCloud), 0f, cloudSpawnInterval);
         InvokeRepeating(nameof(SpawnObstacles), 0f, obstaclesSpawnInterval);
+        
     }
 
     // Update is called once per frame

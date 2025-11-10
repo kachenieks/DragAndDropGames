@@ -18,6 +18,7 @@ TagManager:
   - Traktors2
   - Bomb
   - InterstitialAdButton
+  - Pole
   layers:
   - Default
   - TransparentFX

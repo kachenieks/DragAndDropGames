@@ -19,15 +19,17 @@ public class ObstaclesControlerScript : MonoBehaviour
     private Image image;
     private Color originalColor;
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    // Debug režīma pārslēgšanai
+    public bool showDebugLines = true;
+    public Color minXColor = Color.red;
+    public Color maxXColor = Color.green;
+
     void Start()
     {
         canvasGroup = GetComponent<CanvasGroup>();
-        if(canvasGroup == null)
-        {
+        if (canvasGroup == null)
             canvasGroup = gameObject.AddComponent<CanvasGroup>();
-        }
-        
+
         rectTransform = GetComponent<RectTransform>();
 
         image = GetComponent<Image>();
@@ -38,18 +40,14 @@ public class ObstaclesControlerScript : MonoBehaviour
         StartCoroutine(FadeIn());
     }
 
-    // Update is called once per frame
-    // ... iepriekšējais kods ...
-
     void Update()
     {
         float waveOffset = Mathf.Sin(Time.time * waveFrequency) * waveAmplitude;
-        rectTransform.anchoredPosition += new Vector2(-speed * Time.deltaTime, waveOffset * Time.deltaTime);
+        rectTransform.anchoredPosition += new Vector2(speed * Time.deltaTime, waveOffset * Time.deltaTime);
 
-        // Iznīcināšana, kad iziet ārpus ekrāna
-        if ((speed > 0 && rectTransform.anchoredPosition.x < screenBoundriesScript.minX - 300f) ||
-            (speed < 0 && rectTransform.anchoredPosition.x > screenBoundriesScript.maxX + 300f))
-
+        // ✅ Pareiza robežu pārbaude
+        if ((speed > 0 && rectTransform.anchoredPosition.x > screenBoundriesScript.maxX + 300f) ||
+            (speed < 0 && rectTransform.anchoredPosition.x < screenBoundriesScript.minX - 300f))
         {
             if (!isFadingOut)
             {
@@ -57,6 +55,9 @@ public class ObstaclesControlerScript : MonoBehaviour
                 StartCoroutine(FadeOutAndDestroy());
             }
         }
+
+        // ✅ Debug: parāda objektu pozīciju un ātrumu
+        // Debug.Log($"{gameObject.name} | X: {rectTransform.anchoredPosition.x} | Speed: {speed}");
 
         // Bomba bez vilkšanas
         Vector2 inputPosition;
@@ -69,13 +70,12 @@ public class ObstaclesControlerScript : MonoBehaviour
             TriggerExplosion();
         }
 
-        // ✅ SASKARE AR OBSTACLE KAMĒR VILK MAŠĪNU → ZAUDĒJUMS
+        // ✅ Saskare ar obstacle, kamēr velk mašīnu → zaudējums
         if (ObjectScript.drag && !isFadingOut &&
             RectTransformUtility.RectangleContainsScreenPoint(rectTransform, inputPosition, Camera.main))
         {
             if (ObjectScript.lastDragged != null)
             {
-                // 👇 TIEŠI ŠEIT IZSAUC ZAUDĒJUMU
                 GameManager.Instance?.OnVehicleDestroyed();
 
                 Destroy(ObjectScript.lastDragged);
@@ -83,39 +83,33 @@ public class ObstaclesControlerScript : MonoBehaviour
                 ObjectScript.drag = false;
             }
 
-            // Efekti
             image.color = CompareTag("Bomb") ? Color.red : Color.cyan;
             StartCoroutine(RecoverColor(0.5f));
             StartCoroutine(Vibrate());
 
             if (objectScript != null && objectScript.effects != null && objectScript.audioCli.Length > 14)
-            {
                 objectScript.effects.PlayOneShot(objectScript.audioCli[14]);
-            }
         }
     }
 
     bool TryGetInputPosition(out Vector2 position)
     {
-        #if UNITY_EDITOR || UNITY_STANDALONE
-            position = Input.mousePosition;
+#if UNITY_EDITOR || UNITY_STANDALONE
+        position = Input.mousePosition;
+        return true;
+#elif UNITY_ANDROID
+        if (Input.touchCount > 0)
+        {
+            position = Input.GetTouch(0).position;
             return true;
-
-        #elif UNITY_ANDROID
-            if (Input.touchCount > 0)
-            {
-                position = Input.GetTouch(0).position;
-                return true;
-            }
-            else
-            {
-                position = Vector2.zero;
-                return false;
-            }
-        #endif
+        }
+        else
+        {
+            position = Vector2.zero;
+            return false;
+        }
+#endif
     }
-
-    // ... pārējais kods ...
 
     public void TriggerExplosion()
     {
@@ -123,9 +117,7 @@ public class ObstaclesControlerScript : MonoBehaviour
         objectScript.effects.PlayOneShot(objectScript.audioCli[15], 5f);
 
         if (TryGetComponent<Animator>(out Animator animator))
-        {
             animator.SetBool("Explode", true);
-        }
 
         image.color = Color.red;
         StartCoroutine(RecoverColor(0.4f));
@@ -142,7 +134,6 @@ public class ObstaclesControlerScript : MonoBehaviour
             ExplodeAndDestroyNearbyObjects(radius);
             yield return new WaitForSeconds(1f);
             Destroy(gameObject);
-            //....
         }
     }
 
@@ -155,9 +146,7 @@ public class ObstaclesControlerScript : MonoBehaviour
             {
                 ObstaclesControlerScript obj = hit.GetComponent<ObstaclesControlerScript>();
                 if (obj != null && !obj.isExploding)
-                {
                     obj.StartToDestroy(Color.cyan);
-                }
             }
         }
     }
@@ -171,24 +160,20 @@ public class ObstaclesControlerScript : MonoBehaviour
 
             image.color = c;
             StartCoroutine(RecoverColor(0.5f));
-            
             StartCoroutine(Vibrate());
             objectScript.effects.PlayOneShot(objectScript.audioCli[15]);
-            
         }
-        
     }
 
     IEnumerator FadeIn()
     {
         float a = 0f;
-        while(a < fadeDuration)
+        while (a < fadeDuration)
         {
             a += Time.deltaTime;
             canvasGroup.alpha = Mathf.Lerp(0f, 1f, a / fadeDuration);
             yield return null;
         }
-
         canvasGroup.alpha = 1f;
     }
 
@@ -208,25 +193,6 @@ public class ObstaclesControlerScript : MonoBehaviour
         Destroy(gameObject);
     }
 
-    IEnumerator ShrinkAndDestroy(GameObject target, float duration)
-    {
-        Vector3 originalScale = target.transform.localScale;
-        Quaternion originalRotation = target.transform.rotation;
-        float t = 0f;
-
-        while (t < duration)
-        {
-            t += Time.deltaTime;
-            target.transform.localScale = Vector3.Lerp(originalScale, Vector3.zero, t / duration);
-            float angle = Mathf.Lerp(0, 360, t / duration);
-            target.transform.rotation = Quaternion.Euler(0, 0, angle);
-
-            yield return null;
-        }
-
-        Destroy(target);
-    }
-
     IEnumerator RecoverColor(float seconds)
     {
         yield return new WaitForSeconds(seconds);
@@ -235,9 +201,9 @@ public class ObstaclesControlerScript : MonoBehaviour
 
     IEnumerator Vibrate()
     {
-        #if UNITY_ANDROID
+#if UNITY_ANDROID
         Handheld.Vibrate();
-        #endif
+#endif
 
         Vector2 originalPosition = rectTransform.anchoredPosition;
         float duration = 0.3f;
@@ -251,32 +217,19 @@ public class ObstaclesControlerScript : MonoBehaviour
             yield return null;
         }
 
-if (ObjectScript.drag && !isFadingOut && 
-    RectTransformUtility.RectangleContainsScreenPoint(rectTransform, Input.mousePosition, Camera.main))
-{
-    Debug.Log("✅ Sadursme atpazīta!");
-
-            if (ObjectScript.lastDragged != null)
-            {
-                Debug.Log("🚀 Iznīcina mašīnu: " + ObjectScript.lastDragged.name);
-                Destroy(ObjectScript.lastDragged); // 👈 Strādā arī ar UI
-                ObjectScript.lastDragged = null;
-                ObjectScript.drag = false;
-            }
-else
-{
-    Debug.Log("❌ lastDragged ir NULL!");
-}
-
-    // Efekti
-    image.color = Color.cyan;
-    StartCoroutine(RecoverColor(5f));
-    StartCoroutine(Vibrate());
-
-    if (objectScript != null && objectScript.effects != null && objectScript.audioCli != null)
-    {
-        objectScript.effects.PlayOneShot(objectScript.audioCli[14]);
+        rectTransform.anchoredPosition = originalPosition;
     }
-}
+
+    // ✅ Debug režīms — redz minX / maxX līnijas
+    void OnDrawGizmos()
+    {
+        if (showDebugLines && screenBoundriesScript != null)
+        {
+            Gizmos.color = minXColor;
+            Gizmos.DrawLine(new Vector3(screenBoundriesScript.minX, -2000, 0), new Vector3(screenBoundriesScript.minX, 2000, 0));
+
+            Gizmos.color = maxXColor;
+            Gizmos.DrawLine(new Vector3(screenBoundriesScript.maxX, -2000, 0), new Vector3(screenBoundriesScript.maxX, 2000, 0));
+        }
     }
 }

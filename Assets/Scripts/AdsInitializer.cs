@@ -8,6 +8,7 @@ public class AdsInitializer : MonoBehaviour, IUnityAdsInitializationListener
     [SerializeField] bool _testMode = true;
     private string _gameId;
 
+    // ✅ Notikums, uz kuru pieslēdzas RewardedAds un InterstitialAd
     public event Action onAdsInitialized;
 
     private void Awake()
@@ -23,6 +24,7 @@ public class AdsInitializer : MonoBehaviour, IUnityAdsInitializationListener
 
         if (!Advertisement.isInitialized && Advertisement.isSupported)
         {
+            Debug.Log("🟡 Initializing Unity Ads...");
             Advertisement.Initialize(_gameId, _testMode, this);
         }
     }
@@ -30,7 +32,7 @@ public class AdsInitializer : MonoBehaviour, IUnityAdsInitializationListener
     public void OnInitializationComplete()
     {
         Debug.Log("✅ Unity Ads initialization complete.");
-        onAdsInitialized?.Invoke();
+        onAdsInitialized?.Invoke(); // Izsauc eventu, kas aktivizē reklāmu ielādi
     }
 
     public void OnInitializationFailed(UnityAdsInitializationError error, string message)
@@ -38,4 +40,3 @@ public class AdsInitializer : MonoBehaviour, IUnityAdsInitializationListener
         Debug.LogWarning($"❌ Unity Ads initialization failed: {error} - {message}");
     }
 }
-

@@ -22,9 +22,34 @@ public class InterstitialAd : MonoBehaviour, IUnityAdsLoadListener, IUnityAdsSho
             _interstitialAdButton.onClick.AddListener(ShowInterstitial);
     }
 
+    // ✅ Piesakāmies uz AdsInitializer notikumu
+    private void OnEnable()
+    {
+        var adsInitializer = FindFirstObjectByType<AdsInitializer>();
+        if (adsInitializer != null)
+        {
+            adsInitializer.onAdsInitialized += OnAdsInitialized;
+        }
+    }
+
+    private void OnDisable()
+    {
+        var adsInitializer = FindFirstObjectByType<AdsInitializer>();
+        if (adsInitializer != null)
+        {
+            adsInitializer.onAdsInitialized -= OnAdsInitialized;
+        }
+    }
+
     private void Start()
     {
-        LoadAd();
+        if (_interstitialAdButton != null)
+            _interstitialAdButton.interactable = false;
+    }
+
+    private void OnAdsInitialized()
+    {
+        LoadAd(); // ✅ ielādē reklāmu tikai pēc inicializācijas pabeigšanas
     }
 
     private void Update()
@@ -46,28 +71,28 @@ public class InterstitialAd : MonoBehaviour, IUnityAdsLoadListener, IUnityAdsSho
     }
 
     public void ShowAd()
-{
-    if (isReady)
     {
-        Debug.Log("🟢 Showing interstitial ad...");
-        Advertisement.Show(_adUnitId, this);
-        isReady = false;
+        if (isReady)
+        {
+            Debug.Log("🟢 Showing interstitial ad...");
+            Advertisement.Show(_adUnitId, this);
+            isReady = false;
+        }
+        else
+        {
+            Debug.LogWarning("⚠️ Interstitial ad not ready yet. Trying to reload...");
+            LoadAd();
+        }
     }
-    else
-    {
-        Debug.LogWarning("⚠️ Interstitial ad not ready yet. Trying to reload...");
-        LoadAd();
-    }
-}
-
 
     public void ShowInterstitial()
     {
-        if(AdManager.instance != null && isReady)
+        if (AdManager.instance != null && isReady)
         {
-        Debug.Log("Showing interstitial ad from button.");
-           ShowAd();
-        }else
+            Debug.Log("🟢 Showing interstitial ad from button.");
+            ShowAd();
+        }
+        else
         {
             Debug.LogWarning("⚠️ Cannot show interstitial ad from button. AdManager instance is null or ad not ready.");
             LoadAd();
@@ -88,13 +113,18 @@ public class InterstitialAd : MonoBehaviour, IUnityAdsLoadListener, IUnityAdsSho
     public void OnUnityAdsFailedToLoad(string placementId, UnityAdsLoadError error, string message)
     {
         Debug.LogWarning($"❌ Failed to load interstitial ad {placementId}: {error} - {message}");
+        StartCoroutine(WaitAndRetry(5f));
+    }
+
+    private IEnumerator WaitAndRetry(float delay)
+    {
+        yield return new WaitForSeconds(delay);
         LoadAd();
     }
 
     // ================================
     // ✅ Show listener
     // ================================
-
     public void OnUnityAdsShowClick(string placementId)
     {
         Debug.Log($"🖱️ Interstitial ad clicked: {placementId}");
@@ -114,15 +144,14 @@ public class InterstitialAd : MonoBehaviour, IUnityAdsLoadListener, IUnityAdsSho
             LoadAd();
         }
     }
-    
+
     private IEnumerator SlowDownTimeTemporarily(float seconds)
     {
         Time.timeScale = 0.4f;
-        Debug.Log("Time slowed down for ad completion effect.");
+        Debug.Log("🐢 Time slowed down for ad completion effect.");
         yield return new WaitForSeconds(seconds);
-
         Time.timeScale = 1f;
-        Debug.Log("Time restored to normal.");
+        Debug.Log("⏩ Time restored to normal.");
     }
 
     public void OnUnityAdsShowFailure(string placementId, UnityAdsShowError error, string message)

@@ -11,6 +11,9 @@ public class AdManager : MonoBehaviour
     // tavs esošais flags — paturam, bet vairs nebalstāmies uz to
     private bool firstAdShown = false;
 
+    public RewardedAds rewardedAds;
+    [SerializeField] bool turnOffRewardedAds = false;
+
     // 🔸 Ja OnSceneLoaded atnāk, bet reklāma vēl nav gatava, atzīmējam,
     // ka pēc ielādes to vajag parādīt.
     private bool pendingShowAfterLoad = false;
@@ -72,6 +75,11 @@ public class AdManager : MonoBehaviour
         // Ja nav gatavs — ielādē
         if (!interstitialAd.isReady)
             interstitialAd.LoadAd();
+
+        if (!turnOffRewardedAds) 
+        {
+            rewardedAds.LoadAd();
+        }
     }
 
     private void HandleInterstitialReady()
@@ -137,5 +145,13 @@ public class AdManager : MonoBehaviour
             pendingShowAfterLoad = true;
             interstitialAd.LoadAd(); // HandleInterstitialReady parādīs, tiklīdz būs gatava
         }
+
+        if (rewardedAds == null)
+            rewardedAds = FindFirstObjectByType<RewardedAds>();
+
+        Button rewardedAdButton = GameObject.FindGameObjectWithTag("RewardedAdButton").GetComponent<Button>();
+
+        if (rewardedAds != null && rewardedAdButton != null)
+            rewardedAds.SetButton(rewardedAdButton);
     }
 }

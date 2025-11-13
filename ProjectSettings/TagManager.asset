@@ -20,6 +20,7 @@ TagManager:
   - InterstitialAdButton
   - Pole
   - RewardedAdButton
+  - Ground
   layers:
   - Default
   - TransparentFX
@@ -27,7 +28,7 @@ TagManager:
   - 
   - Water
   - UI
-  - 
+  - PoleLayer
   - 
   - 
   - 

@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.Advertisements;
 using UnityEngine.UI;
 using System.Collections;
+using UnityEngine.SceneManagement;
 
 public class RewardedAds : MonoBehaviour, IUnityAdsLoadListener, IUnityAdsShowListener
 {
@@ -68,6 +69,30 @@ public class RewardedAds : MonoBehaviour, IUnityAdsLoadListener, IUnityAdsShowLi
 
     public void OnUnityAdsAdLoaded(string adUnitId)
     {
+        // --- HANOJA REWARD: -1 MOVE ---
+if (SceneManager.GetActiveScene().name == "HanojasTornis")
+{
+    Debug.Log("[ADS] Reward saņemts Hanojā – mēģinu samazināt gājienus!");
+
+    var tm = TowerManager.Instance;
+
+    if (tm != null)
+    {
+        bool ok = tm.ReduceMoveByOne();
+
+        if (ok)
+            Debug.Log("[ADS] ✔ Samazināju gājienu par 1!");
+        else
+            Debug.Log("[ADS] ✖ Gājieni jau ir 0 – nevar samazināt!");
+    }
+    else
+    {
+        Debug.LogWarning("[ADS] TowerManager nav atrasts!");
+    }
+}
+
+
+
         Debug.Log($"🟢 Rewarded ad loaded: {adUnitId}");
 
         if (adUnitId.Equals(_adUnitId))
@@ -104,7 +129,9 @@ public class RewardedAds : MonoBehaviour, IUnityAdsLoadListener, IUnityAdsShowLi
 
     public void OnUnityAdsShowStart(string adUnitId)
     {
-        Time.timeScale = 0f; // pauzē spēli
+        if (SceneManager.GetActiveScene().name == "CityScene")
+    Time.timeScale = 0f;
+
     }
 
     public void OnUnityAdsShowClick(string adUnitId)
@@ -138,7 +165,9 @@ public class RewardedAds : MonoBehaviour, IUnityAdsLoadListener, IUnityAdsShowLi
         StartCoroutine(WaitAndLoad(10f));
     }
 
+    if (SceneManager.GetActiveScene().name == "CityScene")
     Time.timeScale = 1f;
+
 }
 
 

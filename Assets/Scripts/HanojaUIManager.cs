@@ -1,10 +1,10 @@
 using UnityEngine;
-using UnityEngine.UI;
+using TMPro;
 
 public class HanojaUIManager : MonoBehaviour
 {
-    public Text MoveCounterText;
-    public Text MinMovesText;
+    public TextMeshProUGUI MoveCounterText;
+    public TextMeshProUGUI MinMovesText;
 
     private TowerManager towerManager;
 
@@ -17,6 +17,12 @@ public class HanojaUIManager : MonoBehaviour
     private void Update()
     {
         UpdateUI();
+
+        // CHEAT CODE: Nospied O lai uzvarētu
+        if (Input.GetKeyDown(KeyCode.O))
+        {
+            towerManager.CheatAutoWin(); // <-- SALABOTS
+        }
     }
 
     private void UpdateUI()

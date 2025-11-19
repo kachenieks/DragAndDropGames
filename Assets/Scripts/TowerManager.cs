@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+using TMPro;
 
 public class TowerManager : MonoBehaviour
 {
@@ -20,7 +21,7 @@ public class TowerManager : MonoBehaviour
 
     // UI elementi
     public GameObject WinPanel;
-    public UnityEngine.UI.Text WinText;
+    public TextMeshProUGUI WinText; 
     public UnityEngine.UI.Button ResetButton;
 
     private int moveCount = 0;
@@ -70,6 +71,18 @@ public class TowerManager : MonoBehaviour
 
         moveCount = 0;
         gameWon = false;
+
+        // UI setup
+        if (WinPanel != null)
+        {
+            WinPanel.SetActive(false);
+        }
+
+        if (ResetButton != null)
+        {
+            ResetButton.onClick.RemoveAllListeners();
+            ResetButton.onClick.AddListener(ResetGame);
+        }
 
         Debug.Log($"[HANOJA] Spēle sākta! Bloku skaits: {TotalBlocks}, Minimālie gājieni: {Mathf.Pow(2, TotalBlocks) - 1}");
     }
@@ -194,24 +207,42 @@ public class TowerManager : MonoBehaviour
         int minMoves = (int)(Mathf.Pow(2, TotalBlocks) - 1);
         string poleName = WinningPole == 0 ? "A" : (WinningPole == 1 ? "B" : "C");
 
-        Debug.Log($"╔══════════════════════════════════╗");
-        Debug.Log($"║     🎉 APSVEICU! UZVARA! 🎉     ║");
-        Debug.Log($"╠══════════════════════════════════╣");
+        Debug.Log($"║     UZVARA!      ║");
         Debug.Log($"║  Tornis pabeigts uz: Pole {poleName}     ║");
         Debug.Log($"║  Tavi gājieni: {moveCount}              ║");
         Debug.Log($"║  Minimālie gājieni: {minMoves}          ║");
-        Debug.Log($"╚══════════════════════════════════╝");
 
-        if (moveCount == minMoves)
+        // Parāda Win Panel
+        if (WinPanel != null)
         {
-            Debug.Log("🏆 PERFEKTS! Izdarīts optimālā gājienu skaitā!");
-        }
-        else
-        {
-            Debug.Log($"💡 Pamēģini atkal sasniegt {minMoves} gājienus!");
+            WinPanel.SetActive(true);
         }
 
-        // Animācija vai efekti (opcija)
+        // Atjaunina tekstu
+        if (WinText != null)
+        {
+            string message = $" APSVEICU! \n\n";
+            message += $"Tornis pabeigts uz Pole {poleName}\n\n";
+            message += $"Tavi gājieni: {moveCount}\n";
+            message += $"Optimālie gājieni: {minMoves}\n\n";
+
+            if (moveCount == minMoves)
+            {
+                message += " PERFEKTS REZULTĀTS! ";
+            }
+            else if (moveCount <= minMoves * 1.5f)
+            {
+                message += " Lielisks rezultāts!";
+            }
+            else
+            {
+                message += $" Pamēģini sasniegt {minMoves}!";
+            }
+
+            WinText.text = message;
+        }
+
+        // Animācija
         StartCoroutine(VictoryAnimation());
     }
 
@@ -253,8 +284,57 @@ public class TowerManager : MonoBehaviour
     public bool IsGameWon() => gameWon;
 
     public void ResetGame()
+{
+    Debug.Log("[HANOJA] Pārstartē spēli...");
+    UnityEngine.SceneManagement.SceneManager.LoadScene("HanojasTornis");
+}
+
+
+    // --- CHEAT CODE ---
+    
+    public void CheatAutoWin()
     {
-        Debug.Log("[HANOJA] Pārstartē spēli...");
-        Start();
+        // Pārvieto visus blokus uz uzvaras torni
+        List<DragAndDropHanojaBlock> allBlocks = new List<DragAndDropHanojaBlock>();
+        
+        // Savāc visus blokus
+        for (int i = 0; i < 3; i++)
+        {
+            allBlocks.AddRange(towers[i]);
+            towers[i].Clear();
+        }
+        
+        // Sakārto pēc izmēra (lielākais pirmais)
+        allBlocks = allBlocks.OrderByDescending(b => b.SizeIndex).ToList();
+        
+        // Saliek uz uzvaras torņa
+        foreach (var block in allBlocks)
+        {
+            towers[WinningPole].Add(block);
+            block.CurrentPole = WinningPole;
+        }
+        
+        RealignTower(WinningPole);
+        
+        // Pieskaitīt gājienu (testa režīms)
+        moveCount++;
+        
+        // Aktivizē uzvaras ekrānu
+        CheckWinCondition();
     }
+
+    // --- REWARDED AD FUNKCIJA ---
+public bool ReduceMoveByOne()
+{
+    if (moveCount <= 0)
+    {
+        Debug.Log("[ADS] Nevar samazināt gājienus – jau ir 0.");
+        return false;
+    }
+
+    moveCount--;
+    Debug.Log("[ADS] Gājiens samazināts! Jaunie gājieni: " + moveCount);
+    return true;
+}
+
 }

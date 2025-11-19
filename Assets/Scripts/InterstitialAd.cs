@@ -150,7 +150,9 @@ public class InterstitialAd : MonoBehaviour, IUnityAdsLoadListener, IUnityAdsSho
         Time.timeScale = 0.4f;
         Debug.Log("🐢 Time slowed down for ad completion effect.");
         yield return new WaitForSeconds(seconds);
-        Time.timeScale = 1f;
+        if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "CityScene")
+    Time.timeScale = 1f;
+
         Debug.Log("⏩ Time restored to normal.");
     }
 
@@ -163,7 +165,9 @@ public class InterstitialAd : MonoBehaviour, IUnityAdsLoadListener, IUnityAdsSho
     public void OnUnityAdsShowStart(string placementId)
     {
         Debug.Log($"▶️ Interstitial ad started: {placementId}");
-        Time.timeScale = 0f;
+        if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "CityScene")
+    Time.timeScale = 0f;
+
     }
 
     public void SetButton(Button button)

@@ -20,6 +20,10 @@ public class AdManager : MonoBehaviour
 
     public static AdManager instance { get; private set; }
 
+
+    public BannerAd bannerAd;
+    [SerializeField] bool turnOffBannerAd = false;
+
     private void Awake()
     {
         if (adsInitializer == null)
@@ -80,6 +84,11 @@ public class AdManager : MonoBehaviour
         {
             rewardedAds.LoadAd();
         }
+
+        if (!turnOffBannerAd)
+        {
+            bannerAd.LoadBanner();
+        }
     }
 
     private void HandleInterstitialReady()
@@ -126,6 +135,9 @@ public class AdManager : MonoBehaviour
         if (adsInitializer == null)
             adsInitializer = FindFirstObjectByType<AdsInitializer>();
 
+        if (bannerAd == null)
+            bannerAd = FindFirstObjectByType<BannerAd>();
+
         if (turnOffInterstitialAd || interstitialAd == null)
         {
             Debug.Log("AdManager: ads off vai InterstitialAd nav pieejams šajā brīdī.");
@@ -148,6 +160,10 @@ public class AdManager : MonoBehaviour
 
         if (rewardedAds == null)
             rewardedAds = FindFirstObjectByType<RewardedAds>();
+
+        Button bannerAdButton = GameObject.FindGameObjectWithTag("BannerAdButton").GetComponent<Button>();
+        if (bannerAd != null && bannerAdButton != null)
+            bannerAd.SetButton(bannerAdButton);
 
         Button rewardedAdButton = GameObject.FindGameObjectWithTag("RewardedAdButton").GetComponent<Button>();
 

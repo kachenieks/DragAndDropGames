@@ -21,6 +21,7 @@ TagManager:
   - Pole
   - RewardedAdButton
   - Ground
+  - BannerAdButton
   layers:
   - Default
   - TransparentFX

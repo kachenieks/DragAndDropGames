@@ -18,6 +18,11 @@ public class TowerManager : MonoBehaviour
     public int TotalBlocks = 6;
     public int WinningPole = 2; // 0=A, 1=B, 2=C (pēc noklusējuma C)
 
+    // UI elementi
+    public GameObject WinPanel;
+    public UnityEngine.UI.Text WinText;
+    public UnityEngine.UI.Button ResetButton;
+
     private int moveCount = 0;
     private bool gameWon = false;
 

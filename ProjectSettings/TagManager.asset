@@ -17,6 +17,11 @@ TagManager:
   - Traktors
   - Traktors2
   - Bomb
+  - InterstitialAdButton
+  - Pole
+  - RewardedAdButton
+  - Ground
+  - BannerAdButton
   layers:
   - Default
   - TransparentFX
@@ -24,7 +29,7 @@ TagManager:
   - 
   - Water
   - UI
-  - 
+  - PoleLayer
   - 
   - 
   - 

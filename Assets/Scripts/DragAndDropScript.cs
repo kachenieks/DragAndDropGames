@@ -7,108 +7,133 @@ public class DragAndDropScript : MonoBehaviour, IPointerDownHandler, IBeginDragH
     private RectTransform rectTransform;
     private ObjectScript objectScript;
     private ScreenBoundriesScript screenBoundries;
+    private Camera uiCamera;
+    private Canvas canvas;
 
-    private Vector3 originalLocalPosition;
+    private Vector3 originalWorldPosition;
     private Quaternion originalLocalRotation;
     private Vector3 originalLocalScale;
 
     private bool wasDroppedOnDropPlace = false;
 
-    void Start()
+    void Awake()
     {
-        canvasGroup = GetComponent<CanvasGroup>();
-        if (canvasGroup == null)
-            canvasGroup = gameObject.AddComponent<CanvasGroup>();
+        canvas = GetComponentInParent<Canvas>();
+        if (canvas == null)
+        {
+            Debug.LogError("DragAndDropScript: No Canvas found in parent hierarchy on " + name);
+            return;
+        }
+
+        if (canvas.renderMode == RenderMode.ScreenSpaceOverlay)
+        {
+            uiCamera = null;
+        }
+        else if (canvas.renderMode == RenderMode.ScreenSpaceCamera)
+        {
+            uiCamera = canvas.worldCamera;
+            if (uiCamera == null)
+            {
+                Debug.LogError("DragAndDropScript: Canvas is ScreenSpaceCamera but worldCamera is not assigned!");
+            }
+        }
+        else
+        {
+            uiCamera = Camera.main;
+        }
 
         rectTransform = GetComponent<RectTransform>();
+        canvasGroup = GetComponent<CanvasGroup>() ?? gameObject.AddComponent<CanvasGroup>();
+
         objectScript = FindObjectOfType<ObjectScript>();
         screenBoundries = FindObjectOfType<ScreenBoundriesScript>();
+    }
 
-        originalLocalPosition = rectTransform.anchoredPosition;
+    void Start()
+    {
+        // Saglabā sākuma pozīciju pēc tam, kad objekts jau ir spawnots
+        originalWorldPosition = transform.position;
         originalLocalRotation = rectTransform.localRotation;
         originalLocalScale = rectTransform.localScale;
     }
 
     public void OnPointerDown(PointerEventData eventData)
     {
-        if (Input.GetMouseButton(0))
+        Debug.Log("Vilku: " + name);
+        if (objectScript != null && objectScript.effects != null && objectScript.audioCli.Length > 0)
         {
-            Debug.Log("Vilku: " + name);
-            if (objectScript != null && objectScript.effects != null && objectScript.audioCli.Length > 0)
-                objectScript.effects.PlayOneShot(objectScript.audioCli[0]);
+            objectScript.effects.PlayOneShot(objectScript.audioCli[0]);
         }
     }
 
     public void OnBeginDrag(PointerEventData eventData)
     {
-        if (Input.GetMouseButton(0))
-        {
-            ObjectScript.drag = true;
-            canvasGroup.blocksRaycasts = false;
-            canvasGroup.alpha = 0.6f;
-            transform.SetAsLastSibling();
+        ObjectScript.drag = true;
+        ObjectScript.lastDragged = gameObject;
 
-            ObjectScript.lastDragged = gameObject;
-            wasDroppedOnDropPlace = false;
+        canvasGroup.blocksRaycasts = false;
+        canvasGroup.alpha = 0.6f;
+        transform.SetAsLastSibling();
 
-            if (screenBoundries != null)
-            {
-                Vector3 cursorWorldPos = Camera.main.ScreenToWorldPoint(
-                    new Vector3(Input.mousePosition.x, Input.mousePosition.y, screenBoundries.screenPoint.z));
-                rectTransform.position = cursorWorldPos;
-
-                screenBoundries.screenPoint = Camera.main.WorldToScreenPoint(rectTransform.position);
-                screenBoundries.offset = rectTransform.position - Camera.main.ScreenToWorldPoint(
-                    new Vector3(Input.mousePosition.x, Input.mousePosition.y, screenBoundries.screenPoint.z));
-            }
-        }
+        wasDroppedOnDropPlace = false;
     }
 
     public void OnDrag(PointerEventData eventData)
     {
-        if (Input.GetMouseButton(0) && screenBoundries != null)
+        Vector3 pointerWorld;
+        if (!RectTransformUtility.ScreenPointToWorldPointInRectangle(
+                rectTransform, eventData.position, uiCamera, out pointerWorld))
+            return;
+
+        Vector3 desired = pointerWorld;
+        desired.z = transform.position.z; // saglabājam z dziļumu
+
+        if (screenBoundries != null)
         {
-            Vector3 curScreenPoint = new Vector3(Input.mousePosition.x, Input.mousePosition.y, screenBoundries.screenPoint.z);
-            Vector3 curPosition = Camera.main.ScreenToWorldPoint(curScreenPoint) + screenBoundries.offset;
-            rectTransform.position = screenBoundries.GetClampedPosition(curPosition);
+            Vector2 clamped = screenBoundries.GetClampedPosition(desired);
+            transform.position = new Vector3(clamped.x, clamped.y, desired.z);
+        }
+        else
+        {
+            transform.position = desired;
         }
     }
 
     public void OnEndDrag(PointerEventData eventData)
     {
-        if (Input.GetMouseButtonUp(0))
+        ObjectScript.drag = false;
+        canvasGroup.blocksRaycasts = true;
+        canvasGroup.alpha = 1.0f;
+
+        if (wasDroppedOnDropPlace)
         {
-            ObjectScript.drag = false;
-            canvasGroup.blocksRaycasts = true;
-            canvasGroup.alpha = 1.0f;
-
-            // ✅ Ja tika nometts uz DropPlace
-            if (wasDroppedOnDropPlace)
+            if (objectScript != null && objectScript.rightPlace)
             {
-                if (objectScript != null && objectScript.rightPlace)
-                {
-                    // Pareizi novietots — bloķē
-                    canvasGroup.blocksRaycasts = false;
-                    ObjectScript.lastDragged = null;
-                    objectScript.rightPlace = false; // reset
-                }
-                else
-                {
-                    // ❌ Nepareizi novietots uz DropPlace → atgriež sākumā
-                    rectTransform.anchoredPosition = originalLocalPosition;
-                    rectTransform.localRotation = originalLocalRotation;
-                    rectTransform.localScale = originalLocalScale;
-                }
+                // ✅ Pareizi novietots
+                canvasGroup.blocksRaycasts = false;
+                ObjectScript.lastDragged = null;
+                objectScript.rightPlace = false;
             }
-            // ✅ Ja nometts uz tukšas vietas → PALIEK TUR, kur nometi (nekas nedara)
-            // (nekādas darbības nav nepieciešamas)
-
-            wasDroppedOnDropPlace = false;
+            else
+            {
+                // ❌ Nepareizs DropPlace
+                ResetToStart();
+            }
         }
+
+        // 🚫 Ja nav dropots uz DropPlace, paliek tur, kur nometi
+        wasDroppedOnDropPlace = false;
     }
 
     public void MarkAsDroppedOnDropPlace()
     {
         wasDroppedOnDropPlace = true;
+    }
+
+    private void ResetToStart()
+    {
+        transform.position = originalWorldPosition;
+        rectTransform.localRotation = originalLocalRotation;
+        rectTransform.localScale = originalLocalScale;
     }
 }

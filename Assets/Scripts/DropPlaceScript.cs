@@ -3,80 +3,84 @@ using UnityEngine.EventSystems;
 
 public class DropPlaceScript : MonoBehaviour, IDropHandler
 {
-    private float placeZRot, vehicleZRot, rotDiff;
-    private Vector3 placeSiz, vehicleSiz;
-    private float xSizeDiff, ySizeDiff;
-    private ObjectScript objectScript; // 👈 tagad privāts, netiek iestatīts Inspectorā
+    private ObjectScript objectScript;
 
     void Start()
     {
-        // Automātiski atrod ObjectScript ainā
         objectScript = FindObjectOfType<ObjectScript>();
         if (objectScript == null)
-            Debug.LogError("ObjectScript nav atrasts! Pievienojiet ObjectManager ar ObjectScript.");
+            Debug.LogError("ObjectScript nav atrasts!");
     }
 
-    public void OnDrop(PointerEventData eventData) 
+public void OnDrop(PointerEventData eventData)
 {
-    if (eventData.pointerDrag != null)
+    if (eventData.pointerDrag == null) return;
+
+    var dragScript = eventData.pointerDrag.GetComponent<DragAndDropScript>();
+    if (dragScript == null) return;
+
+    dragScript.MarkAsDroppedOnDropPlace();
+
+    if (eventData.pointerDrag.CompareTag(tag))
     {
-        // 👇 Paziņo, ka tika nometts uz DropPlace
-        var dragScript = eventData.pointerDrag.GetComponent<DragAndDropScript>();
-        if (dragScript != null)
-            dragScript.MarkAsDroppedOnDropPlace();
+        Debug.Log("Correct place");
+        objectScript.rightPlace = true;
 
-        if (eventData.pointerDrag.tag.Equals(tag)) 
-        {
-            // ... (rotācijas un izmēra pārbaude)
+        GameManager gm = FindObjectOfType<GameManager>();
+        gm?.OnVehicleCorrectlyPlaced();
 
-            if ((rotDiff <= 5 || (rotDiff >= 355 && rotDiff <= 360)) &&
-                (xSizeDiff <= 0.05f && ySizeDiff <= 0.05f))
-            {
-                Debug.Log("Correct place");
-                objectScript.rightPlace = true;
+        // Novieto precīzi uz DropPlace
+        var vehicleRT = eventData.pointerDrag.GetComponent<RectTransform>();
+        var placeRT = GetComponent<RectTransform>();
+        vehicleRT.anchoredPosition = placeRT.anchoredPosition;
+        vehicleRT.localRotation = placeRT.localRotation;
+        vehicleRT.localScale = placeRT.localScale;
 
-                GameManager gm = FindObjectOfType<GameManager>();
-                gm?.OnVehicleCorrectlyPlaced();
+        PlaySound(tag);
+    }
+    else
+    {
+        objectScript.rightPlace = false;
+        PlayIncorrectSound();
+    }
+}
 
-                // Novieto precīzi
-                var rt = eventData.pointerDrag.GetComponent<RectTransform>();
-                rt.anchoredPosition = GetComponent<RectTransform>().anchoredPosition;
-                rt.localRotation = GetComponent<RectTransform>().localRotation;
-                rt.localScale = GetComponent<RectTransform>().localScale;
-
-                PlaySound(eventData.pointerDrag.tag);
-            }
-            else
-            {
-                // Nepareizi novietots — rightPlace = false (atgriešanu veic DragAndDropScript)
-                objectScript.rightPlace = false;
-                objectScript.effects.PlayOneShot(objectScript.audioCli[1]);
-            }
-        }
-        else
-        {
-            objectScript.rightPlace = false;
+    void PlayIncorrectSound()
+    {
+        if (objectScript?.effects != null && objectScript.audioCli.Length > 1)
             objectScript.effects.PlayOneShot(objectScript.audioCli[1]);
-        }
     }
-}
 
-void PlaySound(string tag)
-{
-    switch (tag)
+    void PlaySound(string tag)
     {
-        case "Garbage": objectScript.effects.PlayOneShot(objectScript.audioCli[2]); break;
-        case "Medicine": objectScript.effects.PlayOneShot(objectScript.audioCli[3]); break;
-        case "Fire": objectScript.effects.PlayOneShot(objectScript.audioCli[4]); break;
-        case "Bus": objectScript.effects.PlayOneShot(objectScript.audioCli[5]); break;
-        case "B2": objectScript.effects.PlayOneShot(objectScript.audioCli[6]); break;
-        case "Cement": objectScript.effects.PlayOneShot(objectScript.audioCli[7]); break;
-        case "E46": objectScript.effects.PlayOneShot(objectScript.audioCli[8]); break;
-        case "E61": objectScript.effects.PlayOneShot(objectScript.audioCli[9]); break;
-        case "Eskavators": objectScript.effects.PlayOneShot(objectScript.audioCli[10]); break;
-        case "Police": objectScript.effects.PlayOneShot(objectScript.audioCli[11]); break;
-        case "Traktors": objectScript.effects.PlayOneShot(objectScript.audioCli[12]); break;
-        case "Traktors2": objectScript.effects.PlayOneShot(objectScript.audioCli[13]); break;
+        if (objectScript == null || objectScript.effects == null || objectScript.audioCli == null)
+            return;
+
+        AudioClip clip = null;
+        switch (tag)
+        {
+            case "Garbage": clip = GetClip(2); break;
+            case "Medicine": clip = GetClip(3); break;
+            case "Fire": clip = GetClip(4); break;
+            case "Bus": clip = GetClip(5); break;
+            case "B2": clip = GetClip(6); break;
+            case "Cement": clip = GetClip(7); break;
+            case "E46": clip = GetClip(8); break;
+            case "E61": clip = GetClip(9); break;
+            case "Eskavators": clip = GetClip(10); break;
+            case "Police": clip = GetClip(11); break;
+            case "Traktors": clip = GetClip(12); break;
+            case "Traktors2": clip = GetClip(13); break;
+        }
+
+        if (clip != null)
+            objectScript.effects.PlayOneShot(clip);
     }
-}
+
+    AudioClip GetClip(int index)
+    {
+        if (index >= 0 && index < objectScript.audioCli.Length)
+            return objectScript.audioCli[index];
+        return null;
+    }
 }

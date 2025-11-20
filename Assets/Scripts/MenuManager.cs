@@ -3,8 +3,32 @@ using UnityEngine.SceneManagement;
 
 public class MenuManager : MonoBehaviour
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    public void PlayGame1()
+    public GameObject Canvas_Windows;
+    public GameObject Canvas_Android;
+
+    [Header("Editor Test Mode")]
+    public bool ForceAndroidUIInEditor = false;
+
+    void Awake()
+    {
+        bool isAndroid = false;
+
+#if UNITY_ANDROID && !UNITY_EDITOR
+        isAndroid = true;
+#endif
+
+#if UNITY_EDITOR
+        if (ForceAndroidUIInEditor)
+            isAndroid = true;
+#endif
+
+        if (Canvas_Windows != null)
+            Canvas_Windows.SetActive(!isAndroid);
+        if (Canvas_Android != null)
+            Canvas_Android.SetActive(isAndroid);
+    }
+
+    public void PlayGame()
     {
         SceneManager.LoadScene(1);
     }
@@ -14,15 +38,19 @@ public class MenuManager : MonoBehaviour
         SceneManager.LoadScene(2);
     }
 
-    public void BackToMainMenu()
+    // ✅ Atgriešanās atpakaļ uz MainMenu
+    public void BackToMenu()
     {
         SceneManager.LoadScene(0);
     }
 
-    // Update is called once per frame
+    // ✅ Aizver spēli vai apstādina Editoru
     public void QuitGame()
     {
-        Debug.Log("Game closed!");
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#else
         Application.Quit();
+#endif
     }
 }

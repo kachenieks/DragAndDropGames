@@ -1,52 +1,101 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public class TransformationScript : MonoBehaviour
 {
-    [Header("Izmēra ierobežojumi")]
-    public float minScale = 0.3f;
-    public float maxScale = 1.05f;
-    public float scaleSpeed = 0.005f;
+    public float rotationSpeed = 90f;
+    public float scaleSpeed = 0.5f;
 
-    [Header("Rotācijas ātrums")]
-    public float rotationSpeed = 15f;
+    public float minScale = 0.7f;  // minimālais izmērs
+    public float maxScale = 1f;  // maksimālais izmērs
+
+    private bool rotateCW, rotateCCW, scaleUpY, scaleDownY, scaleUpX, scaleDownX;
+    public static bool isTransforming = false;
 
     void Update()
     {
-        if (ObjectScript.lastDragged == null) return;
+        if (ObjectScript.lastDragged == null)
+            return;
 
-        RectTransform rect = ObjectScript.lastDragged.GetComponent<RectTransform>();
-        Vector3 currentScale = rect.localScale;
+        RectTransform rt = ObjectScript.lastDragged.GetComponent<RectTransform>();
 
-        // ===== ROTĀCIJA =====
-        if (Input.GetKey(KeyCode.Z))
-        {
-            rect.Rotate(0, 0, rotationSpeed * Time.deltaTime);
-        }
-        if (Input.GetKey(KeyCode.X))
-        {
-            rect.Rotate(0, 0, -rotationSpeed * Time.deltaTime);
-        }
+        // --- MOBILĀS POGAS ---
+        if (rotateCW)
+            rt.Rotate(0, 0, -rotationSpeed * Time.deltaTime);
 
-        // ===== IZMĒRA MAIŅA =====
-        float deltaX = 0f;
-        float deltaY = 0f;
+        if (rotateCCW)
+            rt.Rotate(0, 0, rotationSpeed * Time.deltaTime);
 
-        // X ass (pa kreisi / pa labi)
-        if (Input.GetKey(KeyCode.RightArrow))
-            deltaX = scaleSpeed;
-        if (Input.GetKey(KeyCode.LeftArrow))
-            deltaX = -scaleSpeed;
+        if (scaleUpY)
+            ScaleObject(rt, 0, scaleSpeed * Time.deltaTime, 0);
 
-        // Y ass (augšup / lejup)
-        if (Input.GetKey(KeyCode.UpArrow))
-            deltaY = scaleSpeed;
-        if (Input.GetKey(KeyCode.DownArrow))
-            deltaY = -scaleSpeed;
+        if (scaleDownY)
+            ScaleObject(rt, 0, -scaleSpeed * Time.deltaTime, 0);
 
-        // Piemēro izmaiņas, bet ierobežo robežās
-        float newScaleX = Mathf.Clamp(currentScale.x + deltaX, minScale, maxScale);
-        float newScaleY = Mathf.Clamp(currentScale.y + deltaY, minScale, maxScale);
+        if (scaleUpX)
+            ScaleObject(rt, scaleSpeed * Time.deltaTime, 0, 0);
 
-        rect.localScale = new Vector3(newScaleX, newScaleY, 1f);
+        if (scaleDownX)
+            ScaleObject(rt, -scaleSpeed * Time.deltaTime, 0, 0);
+
+        // --- KLAVIATŪRAS KONTROLES ---
+        KeyboardControls(rt);
+
+        isTransforming = rotateCW || rotateCCW || scaleUpY || scaleUpX || scaleDownX || scaleDownY;
     }
+
+    private void KeyboardControls(RectTransform rt)
+    {
+        // ← un → — ROTĀCIJA
+        if (Input.GetKey(KeyCode.LeftArrow))
+            rt.Rotate(0, 0, rotationSpeed * Time.deltaTime);
+        if (Input.GetKey(KeyCode.RightArrow))
+            rt.Rotate(0, 0, -rotationSpeed * Time.deltaTime);
+
+        // ↑ un ↓ — SCALE kopumā
+        if (Input.GetKey(KeyCode.UpArrow))
+            ScaleObject(rt, scaleSpeed * Time.deltaTime, scaleSpeed * Time.deltaTime, 0);
+        if (Input.GetKey(KeyCode.DownArrow))
+            ScaleObject(rt, -scaleSpeed * Time.deltaTime, -scaleSpeed * Time.deltaTime, 0);
+
+        // X — maina platumu
+        if (Input.GetKey(KeyCode.X))
+            ScaleObject(rt, scaleSpeed * Time.deltaTime, 0, 0);
+        if (Input.GetKey(KeyCode.Z)) // lai ir arī pretējais virziens, ja vēlies
+            ScaleObject(rt, -scaleSpeed * Time.deltaTime, 0, 0);
+
+        // Y — maina augstumu
+        if (Input.GetKey(KeyCode.Y))
+            ScaleObject(rt, 0, scaleSpeed * Time.deltaTime, 0);
+        if (Input.GetKey(KeyCode.U)) // lai būtu atpakaļ virziens
+            ScaleObject(rt, 0, -scaleSpeed * Time.deltaTime, 0);
+    }
+
+    private void ScaleObject(RectTransform rt, float x, float y, float z)
+    {
+        Vector3 newScale = rt.localScale + new Vector3(x, y, z);
+
+        // Ierobežo skalas izmērus
+        newScale.x = Mathf.Clamp(newScale.x, minScale, maxScale);
+        newScale.y = Mathf.Clamp(newScale.y, minScale, maxScale);
+        newScale.z = Mathf.Clamp(newScale.z, minScale, maxScale);
+
+        rt.localScale = newScale;
+    }
+
+    // --- Rotācija ---
+    public void StartRotateCW(BaseEventData data) { rotateCW = true; }
+    public void StopRotateCW(BaseEventData data) { rotateCW = false; }
+    public void StartRotateCCW(BaseEventData data) { rotateCCW = true; }
+    public void StopRotateCCW(BaseEventData data) { rotateCCW = false; }
+
+    // --- Skalēšana ---
+    public void StartScaleUpY(BaseEventData data) { scaleUpY = true; }
+    public void StopScaleUpY(BaseEventData data) { scaleUpY = false; }
+    public void StartScaleDownY(BaseEventData data) { scaleDownY = true; }
+    public void StopScaleDownY(BaseEventData data) { scaleDownY = false; }
+    public void StartScaleUpX(BaseEventData data) { scaleUpX = true; }
+    public void StopScaleUpX(BaseEventData data) { scaleUpX = false; }
+    public void StartScaleDownX(BaseEventData data) { scaleDownX = true; }
+    public void StopScaleDownX(BaseEventData data) { scaleDownX = false; }
 }

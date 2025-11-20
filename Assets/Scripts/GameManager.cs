@@ -4,31 +4,42 @@ using TMPro;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine.SceneManagement;
+using System.Collections;
 
 public class GameManager : MonoBehaviour
 {
+    [Header("Prefabs & Canvas")]
     public List<GameObject> vehiclePrefabs;
     public List<GameObject> dropPlacePrefabs;
     public RectTransform canvasRect;
 
+    [Header("Win UI")]
     public GameObject winPanel;
     public TMP_Text winTimeText;
-    public TMP_Text starsText;
     public Button restartButton;
     public Button menuButton;
     public GameTimer gameTimer;
-
-    public GameObject losePanel;
-    public TMP_Text loseTimeText;
-    public Button loseRestartButton;
-    public Button loseMenuButton;
-    public TMP_Text loseHeaderText; // "You Lost" teksts
-
     public GameObject starPrefab;
     public Transform starsContainer;
 
+    [Header("Lose UI")]
+    public GameObject losePanel;
+    public TMP_Text loseTimeText;
+    public TMP_Text loseHeaderText;
+    public Button loseRestartButton;
+    public Button loseMenuButton;
+
+    [Header("Camera Settings")]
+    public float cameraMoveDuration = 1.0f; // sekundes, cik ātri kamera pārvietojas
+    public float cameraDistance = 2.5f; // attālums no Canvas centra
+
     private int totalVehicles;
     private int correctPlaced = 0;
+    private bool gameEnded = false;
+
+    private Camera mainCamera;
+    private Vector3 cameraStartPos;
+    private Quaternion cameraStartRot;
 
     public static GameManager Instance;
 
@@ -42,6 +53,10 @@ public class GameManager : MonoBehaviour
             return;
         }
 
+        mainCamera = Camera.main;
+        if (mainCamera == null)
+            Debug.LogError("Main Camera not found!");
+
         totalVehicles = vehiclePrefabs.Count;
         SpawnAll();
         gameTimer.StartTimer();
@@ -53,6 +68,7 @@ public class GameManager : MonoBehaviour
 
         winPanel.SetActive(false);
         losePanel.SetActive(false);
+        Time.timeScale = 1f;
     }
 
     void SpawnAll()
@@ -107,24 +123,27 @@ public class GameManager : MonoBehaviour
 
     public void OnVehicleCorrectlyPlaced()
     {
+        if (gameEnded) return;
+
         correctPlaced++;
-        Debug.Log("Pareizi novietoti: " + correctPlaced + "/" + totalVehicles);
-        
         if (correctPlaced >= totalVehicles)
-        {
             Win();
-        }
     }
 
     public void OnVehicleDestroyed()
     {
-        Debug.Log("Mašīna iznīcināta! Zaudējums!");
+        if (gameEnded) return;
         Lose();
     }
 
     void Win()
     {
+        if (gameEnded) return;
+        gameEnded = true;
+
         gameTimer.StopTimer();
+        Time.timeScale = 0f;
+
         float time = gameTimer.GetElapsedTime();
         int stars = time < 60f ? 3 : (time < 90f ? 2 : 1);
 
@@ -140,33 +159,69 @@ public class GameManager : MonoBehaviour
             rt.anchoredPosition = new Vector2(i * 60 - 60, 0);
         }
 
-        winPanel.transform.SetAsLastSibling();
-        winPanel.SetActive(true);
-        losePanel.SetActive(false);
+        StartCoroutine(MoveCameraToCanvas(winPanel));
     }
 
-void Lose()
-{
-    gameTimer.StopTimer();
+    void Lose()
+    {
+        if (gameEnded) return;
+        gameEnded = true;
 
-    if (loseHeaderText != null)
-        loseHeaderText.text = "YOU LOST!";
+        gameTimer.StopTimer();
+        Time.timeScale = 0f;
 
-    if (loseTimeText != null)
+        if (loseHeaderText != null)
+            loseHeaderText.text = "YOU LOST!";
+        if (loseTimeText != null)
             loseTimeText.text = "TIME: " + gameTimer.timerText.text;
 
-    losePanel.SetActive(true);
-        winPanel.SetActive(false);
-    losePanel.transform.SetAsLastSibling();
-}
+        StartCoroutine(MoveCameraToCanvas(losePanel));
+    }
+
+    IEnumerator MoveCameraToCanvas(GameObject panel)
+    {
+        // Rāda tikai nepieciešamo paneli
+        winPanel.SetActive(panel == winPanel);
+        losePanel.SetActive(panel == losePanel);
+
+        RectTransform rt = panel.GetComponent<RectTransform>();
+        rt.anchoredPosition = Vector2.zero;
+        rt.localPosition = Vector3.zero;
+        rt.localRotation = Quaternion.identity;
+        panel.transform.SetAsLastSibling();
+
+        Vector3 targetPos = canvasRect.position - mainCamera.transform.forward * cameraDistance;
+        Quaternion targetRot = Quaternion.LookRotation(canvasRect.position - targetPos);
+
+        float elapsed = 0f;
+        Vector3 startPos = mainCamera.transform.position;
+        Quaternion startRot = mainCamera.transform.rotation;
+
+        while (elapsed < cameraMoveDuration)
+        {
+            elapsed += Time.unscaledDeltaTime; // Time unscaled, jo Time.timeScale=0
+            float t = Mathf.Clamp01(elapsed / cameraMoveDuration);
+
+            mainCamera.transform.position = Vector3.Lerp(startPos, targetPos, t);
+            mainCamera.transform.rotation = Quaternion.Slerp(startRot, targetRot, t);
+
+            yield return null;
+        }
+
+        // Pārliecināmies, ka ir precīzi galamērķī
+        mainCamera.transform.position = targetPos;
+        mainCamera.transform.rotation = targetRot;
+    }
 
     void RestartLevel()
     {
+        Time.timeScale = 1f;
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 
     void ReturnToMenu()
     {
+        Time.timeScale = 1f;
         SceneManager.LoadScene("MainMenu");
     }
 }

@@ -4,24 +4,27 @@ public class LockVerticalRotation : MonoBehaviour
 {
     void Start()
     {
-        // Piespiež landscape tikai šajā scenā
+#if UNITY_ANDROID && !UNITY_EDITOR
+        // Piespiež landscape tikai reālā Android ierīcē
         Screen.autorotateToPortrait = false;
         Screen.autorotateToPortraitUpsideDown = false;
         Screen.autorotateToLandscapeLeft = true;
         Screen.autorotateToLandscapeRight = true;
 
         Screen.orientation = ScreenOrientation.LandscapeRight;
+#endif
     }
 
     void OnDestroy()
     {
-        // Atjauno normālu auto-rotation pārējām scēnām
+#if UNITY_ANDROID && !UNITY_EDITOR
+        // Atjauno normālu rotāciju
         Screen.autorotateToPortrait = true;
         Screen.autorotateToPortraitUpsideDown = true;
         Screen.autorotateToLandscapeLeft = true;
         Screen.autorotateToLandscapeRight = true;
 
         Screen.orientation = ScreenOrientation.AutoRotation;
+#endif
     }
 }
-

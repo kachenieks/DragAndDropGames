@@ -2,16 +2,27 @@
 Unity 2D Drag And Drop games for children +6
 
 **To do list:**
-- [x] Create the neccesary folders
-- [x] Add necessary assets
-- [x] Add cars on the map
-- [x] Create C# script for the drag and drop
-- [x] Create C# script for transformation
-- [x] Create C# script for object fixation
-- [X] Add necessary sounds and audio sources
-- [X] Create logic for winning, add timer
-- [X] Create camera script for zoom in/out
-- [X] Create animated main menu with 3 buttons, etc.
+- [x] Project folder structure created  
+- [x] All required assets imported  
+- [x] CityGame scene objects placed  
+- [x] Drag & Drop script implemented  
+- [x] Object transformation script  
+- [x] Object snapping & win-logic implemented  
+- [x] Sounds and audio effects added  
+- [x] Timer and star-rating system  
+- [x] Camera zoom in/out  
+- [x] Animated main menu  
+- [x] Interstitial Ads between scenes  
+- [x] Banner Ads in CityGame + HanojasTornis  
+- [x] Rewarded Ads in CityGame (adds extra time)  
+- [x] Rewarded Ads in HanojasTornis (removes 1 move, never below 0)  
+- [x] Fully working Hanoi Tower with 6 blocks  
+- [x] Physics added: blocks fall naturally and align correctly  
+- [x] Only the top block can be picked up  
+- [x] Win condition when all blocks are moved to the chosen tower  
+- [x] Win panel + animations  
+- [x] Reset function added  
+- [x] Android touch support  
 
 
 **🕹️ Game Overview:**

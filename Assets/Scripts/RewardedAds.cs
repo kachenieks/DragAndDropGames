@@ -22,7 +22,6 @@ public class RewardedAds : MonoBehaviour, IUnityAdsLoadListener, IUnityAdsShowLi
 
     private void OnEnable()
     {
-        // ✅ Piesakāmies AdsInitializer notikumam
         var adsInitializer = FindFirstObjectByType<AdsInitializer>();
         if (adsInitializer != null)
         {
@@ -32,7 +31,6 @@ public class RewardedAds : MonoBehaviour, IUnityAdsLoadListener, IUnityAdsShowLi
 
     private void OnDisable()
     {
-        // Atvienojam, kad objekts tiek deaktivizēts
         var adsInitializer = FindFirstObjectByType<AdsInitializer>();
         if (adsInitializer != null)
         {
@@ -52,7 +50,7 @@ public class RewardedAds : MonoBehaviour, IUnityAdsLoadListener, IUnityAdsShowLi
 
     private void OnAdsInitialized()
     {
-        LoadAd(); // Tikai pēc inicializācijas
+        LoadAd();
     }
 
     public void LoadAd()
@@ -69,31 +67,29 @@ public class RewardedAds : MonoBehaviour, IUnityAdsLoadListener, IUnityAdsShowLi
 
     public void OnUnityAdsAdLoaded(string adUnitId)
     {
-        // --- HANOJA REWARD: -1 MOVE ---
-if (SceneManager.GetActiveScene().name == "HanojasTornis")
-{
-    Debug.Log("[ADS] Reward saņemts Hanojā – mēģinu samazināt gājienus!");
-
-    var tm = TowerManager.Instance;
-
-    if (tm != null)
-    {
-        bool ok = tm.ReduceMoveByOne();
-
-        if (ok)
-            Debug.Log("[ADS] ✔ Samazināju gājienu par 1!");
-        else
-            Debug.Log("[ADS] ✖ Gājieni jau ir 0 – nevar samazināt!");
-    }
-    else
-    {
-        Debug.LogWarning("[ADS] TowerManager nav atrasts!");
-    }
-}
-
-
-
         Debug.Log($"🟢 Rewarded ad loaded: {adUnitId}");
+
+        // --- HANOJA REWARD: -1 MOVE ---
+        if (SceneManager.GetActiveScene().name == "HanojasTornis")
+        {
+            Debug.Log("[ADS] Reward saņemts Hanojā – mēģinu samazināt gājienus!");
+
+            var tm = TowerManager.Instance;
+
+            if (tm != null)
+            {
+                bool ok = tm.ReduceMoveByOne();
+
+                if (ok)
+                    Debug.Log("[ADS] ✔ Samazināju gājienu par 1!");
+                else
+                    Debug.Log("[ADS] ✖ Gājieni jau ir 0 – nevar samazināt!");
+            }
+            else
+            {
+                Debug.LogWarning("[ADS] TowerManager nav atrasts!");
+            }
+        }
 
         if (adUnitId.Equals(_adUnitId))
             SetButton(true);
@@ -112,26 +108,31 @@ if (SceneManager.GetActiveScene().name == "HanojasTornis")
     }
 
     public void ShowAd()
-{
-    if (!Advertisement.isInitialized)
     {
-        Debug.LogWarning("❌ Unity Ads not initialized yet.");
-        return;
+        if (!Advertisement.isInitialized)
+        {
+            Debug.LogWarning("❌ Unity Ads not initialized yet.");
+            return;
+        }
+
+        if (_rewardedAdButton != null)
+            _rewardedAdButton.interactable = false;
+
+        Debug.Log("🟢 Trying to show rewarded ad...");
+        Advertisement.Show(_adUnitId, this);
     }
 
-    if (_rewardedAdButton != null)
-        _rewardedAdButton.interactable = false;
 
-    Debug.Log("🟢 Trying to show rewarded ad...");
-    Advertisement.Show(_adUnitId, this);
-}
-
-
+    // -----------------------------
+    //   REKLĀMA SĀKAS — PALĒNINI
+    // -----------------------------
     public void OnUnityAdsShowStart(string adUnitId)
     {
         if (SceneManager.GetActiveScene().name == "CityScene")
-    Time.timeScale = 0f;
-
+        {
+            Debug.Log("🐌 Reklāma sākās — palēninu laiku!");
+            Time.timeScale = 0.3f;  // Te nosaki, cik stipri palēninās spēle
+        }
     }
 
     public void OnUnityAdsShowClick(string adUnitId)
@@ -145,30 +146,42 @@ if (SceneManager.GetActiveScene().name == "HanojasTornis")
         StartCoroutine(WaitAndLoad(5f));
     }
 
+    // -----------------------------
+    //   REKLĀMA BEIDZAS — REWARD
+    // -----------------------------
     public void OnUnityAdsShowComplete(string adUnitId, UnityAdsShowCompletionState showCompletionState)
-{
-    if (adUnitId.Equals(_adUnitId) && showCompletionState == UnityAdsShowCompletionState.COMPLETED)
     {
-        Debug.Log("🟢 Rewarded ad completed - granting reward!");
-
-        if (flyingObjectManager != null)
+        if (adUnitId.Equals(_adUnitId) && showCompletionState == UnityAdsShowCompletionState.COMPLETED)
         {
-            Debug.Log("✅ Reward granted! Destroying all flying objects...");
-            flyingObjectManager.DestroyAllFlyingObjects();
-        }
-        else
-        {
-            Debug.LogWarning("⚠️ FlyingObjectManager not found — cannot clear objects.");
+            Debug.Log("🟢 Rewarded ad completed - granting reward!");
+
+            // TIKAI CITYSCENE – Iznīcina lidobjektus
+            if (SceneManager.GetActiveScene().name == "CityScene" && flyingObjectManager != null)
+            {
+                Debug.Log("✨ CityScene reward – Destroying all flying objects!");
+                flyingObjectManager.DestroyAllFlyingObjects();
+            }
+
+            _rewardedAdButton.interactable = false;
+            StartCoroutine(WaitAndLoad(10f));
         }
 
-        _rewardedAdButton.interactable = false;
-        StartCoroutine(WaitAndLoad(10f));
+        // 10 sekundes palēninājums pēc reklāmas
+        if (SceneManager.GetActiveScene().name == "CityScene")
+            StartCoroutine(RestoreTimeAfterDelay());
     }
 
-    if (SceneManager.GetActiveScene().name == "CityScene")
-    Time.timeScale = 1f;
 
-}
+    // -----------------------------
+    //  Atgriež laiku normālu pēc 10s
+    // -----------------------------
+    private IEnumerator RestoreTimeAfterDelay()
+    {
+        Debug.Log("⏳ Palēnināts režīms vēl 10 sekundes...");
+        yield return new WaitForSecondsRealtime(10f);
+        Time.timeScale = 1f;
+        Debug.Log("⏱️ Laiks atjaunots normāls!");
+    }
 
 
     public void SetButton(bool active)

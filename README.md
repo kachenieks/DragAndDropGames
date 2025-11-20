@@ -23,7 +23,6 @@ Unity 2D Drag And Drop games for children +6
 - [x] Win panel + animations  
 - [x] Reset function added  
 - [x] Android touch support  
-- [ ] 🔜 Improved ad animation transitions  
 
 
 

@@ -11,20 +11,21 @@ public class GameTimer : MonoBehaviour
     {
         StartTimer();
     }
+
     void Update()
     {
-        if(!isRunning) return;
-        elapsedTime += Time.deltaTime;
+        if (!isRunning) return;
+
+        // ⏱️ Skaita laiku neatkarīgi no palēnināšanas vai pauzes
+        elapsedTime += Time.unscaledDeltaTime;
 
         int hours = Mathf.FloorToInt(elapsedTime / 3600);
         int minutes = Mathf.FloorToInt((elapsedTime % 3600) / 60);
         int seconds = Mathf.FloorToInt(elapsedTime % 60);
 
         timerText.text = $"{hours:00}:{minutes:00}:{seconds:00}";
-        
     }
 
-    // Update is called once per frame
     public void StartTimer()
     {
         elapsedTime = 0f;
